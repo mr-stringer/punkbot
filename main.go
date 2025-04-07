@@ -1,7 +1,6 @@
 package main
 
 import (
-	"fmt"
 	"log/slog"
 	"os"
 
@@ -12,11 +11,6 @@ import (
 )
 
 func main() {
-
-	if true {
-		fmt.Println(global.ReleaseVersion)
-		fmt.Println(global.BuildTime)
-	}
 
 	logLevel, configPath, err := config.ProcessFlags()
 	if err != nil {
