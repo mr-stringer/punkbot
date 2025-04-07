@@ -1,0 +1,23 @@
+{
+    "name": "punkbot",
+    "build": { "dockerfile": "Dockerfile" },
+    "containerUser": "engineer",
+    "remoteUser": "engineer",
+    "runArgs": [
+        "--name=punkbot-cont",
+        "--init"
+    ],
+    "overrideCommand": false,
+    "postStartCommand": "git config --global --add safe.directory ${containerWorkspaceFolder}",
+    "customizations": {
+        "vscode": {
+            "extensions": [
+                "streetsidesoftware.code-spell-checker",
+                "golang.go",
+                "dnut.rewrap-revived",
+                "echoapi.echoapi-for-vscode",
+                "ms-vscode.makefile-tools"
+            ]
+        }
+    }
+}

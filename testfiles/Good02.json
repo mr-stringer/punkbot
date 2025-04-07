@@ -1,0 +1,9 @@
+{
+  "Identifier": "punkbotjson",
+  "Hashtags": [
+    "punkbot",
+    "running",
+    "JSON"
+  ],
+  "JetStreamServer": "my.jetstream.example.com"
+}
