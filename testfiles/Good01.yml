@@ -1,6 +1,6 @@
 ---
 Identifier: punkbot
-Hashtags:
+Terms:
   - punkbot
   - running
 JetStreamServer: my.jetstream.example.com
