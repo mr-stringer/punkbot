@@ -1,5 +1,7 @@
 # punkbot 🤖
 
+<img src="docs/punkbot.png" alt="Sid the punkbot, hard at work" style="width:500px;">
+
 A simple bot for liking and re-posting posts on bluesky. Written in go-lang.
 
 This bot is used by the account
