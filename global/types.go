@@ -5,6 +5,7 @@ const (
 	ExitConfigFailure
 	ExitNoPasswordSet
 	ExitJetStreamFailure
+	ExitPostOfficeFailure
 	ExitBotFailure
 )
 

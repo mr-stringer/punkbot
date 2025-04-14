@@ -14,6 +14,13 @@ import (
 // If the "JetStreamServer" argument is not configured, the bot will test the
 // latency of the four public servers and connect to the one with the lowest
 // latency.
+
+type ClArgs struct {
+	LogLevel       slog.Level
+	ConfigFilePath string
+	LogPath        string
+	JsonLog        bool
+}
 type Config struct {
 	Identifier string
 	Terms      []string
@@ -26,8 +33,15 @@ type Config struct {
 }
 
 func GetConfig(path string) (*Config, error) {
-	slog.Info("Attempting to read config file", "file", path)
-	viper.SetConfigFile(path)
+	slog.Info("Attempting to read config")
+	if path == "" {
+		slog.Info("No config name specified, will attempt to load config from current directory")
+		viper.SetConfigName("botcnf")
+		viper.AddConfigPath("./")
+	} else {
+		slog.Info("Attempting to read config file", "file", path)
+		viper.SetConfigFile(path)
+	}
 	err := viper.ReadInConfig()
 	if err != nil {
 		slog.Error("Failed to read in config")
@@ -56,6 +70,5 @@ func GetConfig(path string) (*Config, error) {
 			os.Exit(global.ExitJetStreamFailure)
 		}
 	}
-
 	return &cnf, nil
 }

@@ -155,7 +155,9 @@ Punkbot supports four command line flags:
 |:-----|:---------|:------------|
 | -h | none | Print help and quit |
 | -v | none | Print version and quit |
-| -f | path to file | Specifies the location of configuration file, overrides the default |
+| -f | path to configuration file | Specifies the location of configuration file, overrides the default |
+| -o | path to log output file | Specifies the location of the file to use for logging, default logging is to screen |
+| -j | none | Switches logging mode to JSON, default is text |
 | -l | string | Sets the logging level can be set to: `err`, `warn`, `info`(default) or `debug` | 
 
 None of the command line arguments are mandatory.
