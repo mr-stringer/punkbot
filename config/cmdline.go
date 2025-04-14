@@ -15,26 +15,33 @@ import (
 // log level may be set to err, warn, info or debug.
 //
 // the file is set to a string which must be the path to a valid config file
-func ProcessFlags() (slog.Level, string, error) {
-	sl := slog.LevelInfo
+func ProcessFlags() (*ClArgs, error) {
+	cl := ClArgs{}
 	var ver bool
+	var json bool
 
 	logLevelPtr := flag.String("l", "info", "used to set the logging level, may be err, warn, info or debug")
-	configFilePtr := flag.String("f", "./botcnf.yml or ./botcnf.json", "specifies the location of the configuration file")
-	flag.BoolVar(&ver, "v", false, "prints the version and quit")
+	configFilePathPtr := flag.String("f", "", "specifies the location of the configuration file")
+	flag.BoolVar(&ver, "v", false, "prints the version and quits")
+	logPathPtr := flag.String("o", "", "specifies the path of the log file, default logging happens in the console")
+	flag.BoolVar(&json, "j", false, "sets json log format")
 	flag.Parse()
+
+	cl.JsonLog = json
+	cl.ConfigFilePath = *configFilePathPtr
+	cl.LogPath = *logPathPtr
 
 	switch *logLevelPtr {
 	case "err":
-		sl = slog.LevelError
+		cl.LogLevel = slog.LevelError
 	case "warn":
-		sl = slog.LevelWarn
+		cl.LogLevel = slog.LevelWarn
 	case "info":
-		sl = slog.LevelInfo
+		cl.LogLevel = slog.LevelInfo
 	case "debug":
-		sl = slog.LevelDebug
+		cl.LogLevel = slog.LevelDebug
 	default:
-		return 0, "", fmt.Errorf("log level '%s' not supported", *logLevelPtr)
+		return nil, fmt.Errorf("log level '%s' not supported", *logLevelPtr)
 	}
 
 	if ver {
@@ -43,5 +50,5 @@ func ProcessFlags() (slog.Level, string, error) {
 		os.Exit(0)
 	}
 
-	return sl, *configFilePtr, nil
+	return &cl, nil
 }
