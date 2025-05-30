@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"log/slog"
 	"net/http"
+	"os"
 	"time"
 
 	"github.com/mr-stringer/punkbot/config"
@@ -28,25 +29,63 @@ func PreFlightCheck(cnf *config.Config) error {
 	return nil
 }
 
+func DIDResponseServer(cnf *config.Config, cp global.ChanPkg) {
+	slog.Info("Starting the DID Response server")
+	slog.Debug("Getting token")
+	d, err := getToken(cnf)
+	if err != nil {
+		slog.Error("Failed to get token")
+		os.Exit(global.ExitGetToken)
+	}
+
+	/*Configure refresh ticker*/
+	ticker := time.NewTicker(time.Second * 60)
+
+	for {
+		slog.Debug("DIDResponseServer, in the loop", "AccessTokenHash", global.StrHash(d.AccessJwt))
+		select {
+		case <-cp.ReqDidResp:
+			slog.Info("Request for DID Response")
+			// dereference to send copy of DID Response
+			cp.DIDResp <- *d
+		case <-ticker.C:
+			slog.Debug("Attempting to refresh access token")
+			for i := 0; i < global.TokenRefreshAttempts; i++ {
+				d, err = getRefresh(d)
+				if err != nil {
+					slog.Warn("Failed to refresh token", "Attempt", i+1)
+				} else {
+					// if err != nil, we can break out of the retry loop
+					break
+				}
+				time.Sleep(time.Second * global.TokenRefreshTimeout)
+			}
+			if err != nil {
+				slog.Error("Could not refresh token", "error", err.Error())
+				os.Exit(global.ExitGetToken)
+			}
+		}
+	}
+
+}
+
 // Ral (RePost and Like), uses the configured user to re-posts and like the
 // provided message
-func Ral(cnf *config.Config, msg *global.Message) error {
-	token, err := getToken(cnf)
-	if err != nil {
-		slog.Error("Error getting token", "error", err)
-		return err
-	}
+func Ral(cnf *config.Config, msg *global.Message, cp global.ChanPkg) error {
+	//Request a copy of the latest DID Response
+	cp.ReqDidResp <- true
+	dr := <-cp.DIDResp
 
 	uri := fmt.Sprintf("at://%s/app.bsky.feed.post/%s", msg.DID, msg.Commit.RKey)
 
 	resource := &global.CreateRecordProps{
-		DIDResponse: token,
+		DIDResponse: &dr,
 		Resource:    "app.bsky.feed.repost",
 		URI:         uri,
 		CID:         msg.Commit.CID,
 	}
 
-	err = createRecord(resource)
+	err := createRecord(resource)
 	if err != nil {
 		slog.Error("Error creating record", "error", err, "resource", resource.Resource)
 		return err

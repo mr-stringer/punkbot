@@ -7,6 +7,7 @@ const (
 	ExitJetStreamFailure
 	ExitPostOfficeFailure
 	ExitBotFailure
+	ExitGetToken
 )
 
 const ServerArgsPre string = "wss://"
@@ -14,8 +15,11 @@ const ServerArgsPost string = "/subscribe?wantedCollections=app.bsky.feed.post"
 const ApiUrl string = "https://bsky.social/xrpc"
 const CreateSessionEndpoint string = "com.atproto.server.createSession"
 const CreatePostEndpoint string = "com.atproto.repo.createRecord"
+const RefreshEndpoint string = "com.atproto.server.refreshSession"
 const WebsocketTimeout int = 5
 const ByteWorker int = 4
+const TokenRefreshAttempts = 5
+const TokenRefreshTimeout = 5
 
 /*Build info*/
 var ReleaseVersion string = "Development"
@@ -89,4 +93,16 @@ type CreateRecordProps struct {
 	Resource    string
 	URI         string
 	CID         string
+}
+
+type TokenServer struct {
+	Request  chan bool
+	Response chan DIDResponse
+}
+
+type ChanPkg struct {
+	ByteSlice  chan []byte
+	Cancel     chan bool
+	ReqDidResp chan bool
+	DIDResp    chan DIDResponse
 }

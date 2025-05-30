@@ -4,6 +4,7 @@
         "bsky",
         "dnut",
         "echoapi",
+        "initialise",
         "jetstream",
         "Multibase",
         "punkbot",

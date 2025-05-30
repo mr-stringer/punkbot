@@ -34,15 +34,19 @@ func main() {
 
 	slog.Info(cnf.GetSecret())
 
-	/*Test the post office */
-	err = postoffice.PreFlightCheck(cnf)
-	if err != nil {
-		slog.Error(err.Error())
-		os.Exit(global.ExitPostOfficeFailure)
+	/* initialise the channel package */
+	cp := global.ChanPkg{
+		ByteSlice:  make(chan []byte),
+		Cancel:     make(chan bool),
+		ReqDidResp: make(chan bool),
+		DIDResp:    make(chan global.DIDResponse),
 	}
 
+	/*Start the DID Response server*/
+	go postoffice.DIDResponseServer(cnf, cp)
+
 	slog.Info("Starting the bot")
-	err = bot.Start(cnf)
+	err = bot.Start(cnf, cp)
 	if err != nil {
 		os.Exit(global.ExitBotFailure)
 	}
