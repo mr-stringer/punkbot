@@ -18,7 +18,7 @@ import (
 	"github.com/mr-stringer/punkbot/postoffice"
 )
 
-func bpWebsocket(chSig <-chan os.Signal, chCancel chan<- bool, chBa chan<- []byte, wg *sync.WaitGroup, url string) {
+func bpWebsocket(cp global.ChanPkg, wg *sync.WaitGroup, url string) {
 	slog.Info("bpWebsocket started")
 	/* The bot is the oly thing that needs to be cleaned up therefore the bot */
 	/* listens for SIGINT and SIGTERM, it then requests all go routines to    */
@@ -35,7 +35,7 @@ func bpWebsocket(chSig <-chan os.Signal, chCancel chan<- bool, chBa chan<- []byt
 			time.Sleep(time.Duration(global.WebsocketTimeout) * time.Second)
 			continue
 		}
-		quit := handleWebsocket(conn, chBa, chCancel, chSig)
+		quit := handleWebsocket(conn, cp)
 		if quit {
 			return
 		}
@@ -43,14 +43,18 @@ func bpWebsocket(chSig <-chan os.Signal, chCancel chan<- bool, chBa chan<- []byt
 }
 
 // returns true if parent should quit
-func handleWebsocket(conn *websocket.Conn, chBa chan<- []byte, chCancel chan<- bool, chSig <-chan os.Signal) bool {
+func handleWebsocket(conn *websocket.Conn, cp global.ChanPkg) bool {
 	defer conn.Close()
+
+	sig := make(chan os.Signal, 1)
+	signal.Notify(sig, syscall.SIGINT, syscall.SIGTERM)
+
 	for {
 		select {
-		case <-chSig:
+		case <-sig:
 			slog.Warn("Instruction to quit received, shutting down")
 			for i := 0; i < global.ByteWorker; i++ {
-				chCancel <- true
+				cp.Cancel <- true
 			}
 			return true
 		default:
@@ -59,7 +63,7 @@ func handleWebsocket(conn *websocket.Conn, chBa chan<- []byte, chCancel chan<- b
 				log.Printf("read error: %v", err)
 				return false
 			}
-			chBa <- message
+			cp.ByteSlice <- message
 		}
 	}
 }
@@ -72,43 +76,34 @@ func connectWebsocket(url string) (*websocket.Conn, error) {
 	return c, nil
 }
 
-func Start(cnf *config.Config) error {
-
-	/* There is a problem here, if the websocket glitches the whole program   /*
-	/* fails. A possible workaround would be to look out for the failure and  /*
-	/* restart it. That would probably require a dedicated go-routine
-	the */
-	chBa := make(chan []byte)
-	chCancel := make(chan bool)
-	chSig := make(chan os.Signal, 1)
-	signal.Notify(chSig, syscall.SIGINT, syscall.SIGTERM)
+func Start(cnf *config.Config, cp global.ChanPkg) error {
 
 	var workers int = global.ByteWorker
 	var wg sync.WaitGroup
 	slog.Debug("Starting byte handlers")
 	for i := 0; i < workers; i++ {
 		wg.Add(1)
-		go handleBytes(cnf, &wg, i, chCancel, chBa)
+		go handleBytes(cnf, &wg, i, cp)
 	}
 
 	stream := fmt.Sprintf("%s%s%s", global.ServerArgsPre, cnf.JetStreamServer, global.ServerArgsPost)
 	slog.Debug("Starting the websocket listener")
-	go bpWebsocket(chSig, chCancel, chBa, &wg, stream)
+	go bpWebsocket(cp, &wg, stream)
 
 	wg.Wait()
 	slog.Info("Bot shutdown complete")
 	return nil
 }
 
-func handleBytes(cnf *config.Config, wg *sync.WaitGroup, id int, chCancel <-chan bool, chin <-chan []byte) {
+func handleBytes(cnf *config.Config, wg *sync.WaitGroup, id int, cp global.ChanPkg) {
 	slog.Debug("Worker starting", "WorkerId", id)
 	for {
 		select {
-		case <-chCancel:
+		case <-cp.Cancel:
 			slog.Info("Cancel received", "WorkerId", id)
 			wg.Done()
 			return
-		case ba := <-chin:
+		case ba := <-cp.ByteSlice:
 			slog.Debug("Data received", "WorkerId", id, "Length", len(ba))
 			var msg global.Message
 			err := json.Unmarshal(ba, &msg)
@@ -116,7 +111,7 @@ func handleBytes(cnf *config.Config, wg *sync.WaitGroup, id int, chCancel <-chan
 				slog.Error("Couldn't unmarshal message", "error", err.Error())
 				return
 			}
-			err = handleMessage(cnf, id, &msg)
+			err = handleMessage(cnf, id, &msg, cp)
 			if err != nil {
 				slog.Warn("Problem handling message", "WorkerId", id, "error", err.Error())
 				//A single message failure does not require us to quit
@@ -125,7 +120,7 @@ func handleBytes(cnf *config.Config, wg *sync.WaitGroup, id int, chCancel <-chan
 	}
 }
 
-func handleMessage(cnf *config.Config, id int, msg *global.Message) error {
+func handleMessage(cnf *config.Config, id int, msg *global.Message, cp global.ChanPkg) error {
 	/* We only want to repost and like original posts, not replies. */
 	/* Check if there is a reply path */
 	if msg.Commit.Record.Reply.Parent.URI != "" {
@@ -134,7 +129,8 @@ func handleMessage(cnf *config.Config, id int, msg *global.Message) error {
 	}
 	if checkHashtags(cnf, msg) {
 		slog.Info("Found a match", "WorkerId", id, "Msg", msg.Commit.Record.Text)
-		err := postoffice.Ral(cnf, msg)
+		//TODO new post office logic user client/server model
+		err := postoffice.Ral(cnf, msg, cp)
 		if err != nil {
 			slog.Error("Repost failed", "err", err.Error())
 		}
