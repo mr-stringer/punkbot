@@ -22,6 +22,7 @@ func TestGetConfig(t *testing.T) {
 		{"MalformedJson", args{"../testfiles/Malformed.json"}, nil, true},
 		{"NoFile", args{"../testfiles/NoFile.yml"}, nil, true},
 		{"NoPassword", args{"../testfiles/NoPassword.yml"}, nil, true},
+		{"NoTerms", args{"../testfiles/NoTerms.yml"}, nil, true},
 	}
 	for _, tt := range tests {
 		if tt.name == "NoPassword" {

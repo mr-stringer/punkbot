@@ -1,6 +1,7 @@
 package config
 
 import (
+	"fmt"
 	"log/slog"
 	"os"
 
@@ -51,8 +52,15 @@ func GetConfig(path string) (*Config, error) {
 	cnf := Config{}
 	err = viper.Unmarshal(&cnf)
 	if err != nil {
-		slog.Error("failed to unmarshal config", "error", err.Error())
+		slog.Error("Failed to unmarshal config", "error", err.Error())
 		return nil, err
+	}
+
+	/* Ensure that the terms list is not empty */
+	/* No more radiator mode */
+	if len(cnf.Terms) < 1 {
+		slog.Error("The configuration contains no terms. Ensure that 'Terms' is set in the config file")
+		return nil, fmt.Errorf("noTermsInConfig")
 	}
 
 	err = cnf.GetSecretFromEnv()
