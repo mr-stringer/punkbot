@@ -11,6 +11,7 @@ import (
 	"sync"
 	"syscall"
 	"time"
+	"unicode"
 
 	"github.com/gorilla/websocket"
 	"github.com/mr-stringer/punkbot/config"
@@ -127,7 +128,7 @@ func handleMessage(cnf *config.Config, id int, msg *global.Message, cp global.Ch
 		slog.Debug("Post is a reply, will not process", "WorkerId", id)
 		return nil
 	}
-	if checkHashtags(cnf, msg) {
+	if checkForTerms(cnf, msg) {
 		slog.Info("Found a match", "WorkerId", id, "Msg", msg.Commit.Record.Text)
 		//TODO new post office logic user client/server model
 		err := postoffice.Ral(cnf, msg, cp)
@@ -139,11 +140,63 @@ func handleMessage(cnf *config.Config, id int, msg *global.Message, cp global.Ch
 	return nil
 }
 
-func checkHashtags(cnf *config.Config, msg *global.Message) bool {
-	/* Check if hastags are present in the message */
+//func checkHashtags(cnf *config.Config, msg *global.Message) bool {
+//	/* Check if hastags are present in the message */
+//	for _, v := range cnf.Terms {
+//		if strings.Contains(strings.ToLower(msg.Commit.Record.Text), strings.ToLower(v)) {
+//			return true
+//		}
+//	}
+//	return false
+//}
+
+func checkForTerms(cnf *config.Config, msg *global.Message) bool {
+	if msg.Commit.Record.Text == "" {
+		return false // don't waste time on an empty record
+	}
+
+	strLower := strings.ToLower(msg.Commit.Record.Text)
 	for _, v := range cnf.Terms {
-		if strings.Contains(strings.ToLower(msg.Commit.Record.Text), strings.ToLower(v)) {
-			return true
+
+		// Convert both strings to lowercase for case-insensitive comparison
+		substrLower := strings.ToLower(v)
+
+		// Convert to rune slices to handle Unicode properly
+		strRunes := []rune(strLower)
+		substrRunes := []rune(substrLower)
+
+		// Search for the substring
+		for i := 0; i <= len(strRunes)-len(substrRunes); i++ {
+			// Check if substring matches at position i
+			match := true
+			for j := 0; j < len(substrRunes); j++ {
+				if strRunes[i+j] != substrRunes[j] {
+					match = false
+					break
+				}
+			}
+
+			if match {
+				// Check the character immediately before the substring
+				if i > 0 {
+					prevChar := strRunes[i-1]
+					if unicode.IsLetter(prevChar) || unicode.IsDigit(prevChar) {
+						continue // This match is invalid, keep searching
+					}
+				}
+
+				// Check the character immediately after the substring
+				nextCharIndex := i + len(substrRunes)
+				if nextCharIndex < len(strRunes) {
+					nextChar := strRunes[nextCharIndex]
+					if unicode.IsLetter(nextChar) || unicode.IsDigit(nextChar) {
+						continue // This match is invalid, keep searching
+					}
+				}
+
+				// If we get here, both boundaries are valid
+				return true
+			}
 		}
 	}
 	return false
