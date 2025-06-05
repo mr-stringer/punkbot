@@ -20,6 +20,13 @@ it.
 The bot doesn't currently persist any data from Bluesky, but may record stats in
 the future.
 
+## Getting punkbot
+
+Punkbot now supports binaries for Linux and MacOS for both AMD64 and ARM64
+architectures. Binaries can be downloaded from
+[releases](https://github.com/mr-stringer/punkbot/releases). If you require a
+binary for another platform you can raise a an issue or compile it yourself.
+
 ## How to compile
 
 To compile you'll need a working go environment (check go.mod for the correct
