@@ -34,12 +34,16 @@ func ProcessFlags() (*ClArgs, error) {
 	switch *logLevelPtr {
 	case "err":
 		cl.LogLevel = slog.LevelError
+		global.LogLevel = slog.LevelError
 	case "warn":
 		cl.LogLevel = slog.LevelWarn
+		global.LogLevel = slog.LevelWarn
 	case "info":
 		cl.LogLevel = slog.LevelInfo
+		global.LogLevel = slog.LevelInfo
 	case "debug":
 		cl.LogLevel = slog.LevelDebug
+		global.LogLevel = slog.LevelDebug
 	default:
 		return nil, fmt.Errorf("log level '%s' not supported", *logLevelPtr)
 	}
