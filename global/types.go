@@ -1,5 +1,7 @@
 package global
 
+import "log/slog"
+
 const (
 	ExitCmdLineArgsFailure = iota
 	ExitConfigFailure
@@ -20,10 +22,16 @@ const WebsocketTimeout int = 5
 const ByteWorker int = 4
 const TokenRefreshAttempts = 5
 const TokenRefreshTimeout = 5
+const ByteSliceBufferSize = 10
 
 /*Build info*/
 var ReleaseVersion string = "Development"
 var BuildTime string
+
+/* Global var for logging level */
+/* I don't really like global vars, but it gets written once and is read once */
+/* so it should be safe */
+var LogLevel slog.Level = slog.LevelInfo
 
 type Commit struct {
 	CID        string `json:"cid"`

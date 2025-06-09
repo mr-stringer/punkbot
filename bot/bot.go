@@ -91,6 +91,10 @@ func Start(cnf *config.Config, cp global.ChanPkg) error {
 	slog.Debug("Starting the websocket listener")
 	go bpWebsocket(cp, &wg, stream)
 
+	if global.LogLevel == slog.LevelInfo || global.LogLevel == slog.LevelError {
+		go reportBsChanBuf(cp)
+	}
+
 	wg.Wait()
 	slog.Info("Bot shutdown complete")
 	return nil
@@ -200,4 +204,19 @@ func checkForTerms(cnf *config.Config, msg *global.Message) bool {
 		}
 	}
 	return false
+}
+
+func reportBsChanBuf(cp global.ChanPkg) {
+	// Run forever just spitting out the current byteslice buffer every minute
+	tick := time.NewTicker(time.Second * 60)
+	defer tick.Stop()
+	timeout := time.Second * 70
+	for {
+		select {
+		case <-tick.C:
+			slog.Info("ByteSlice channel stats", "BufferSize", "10", "ItemsInBuffer", len(cp.ByteSlice))
+		case <-time.After(timeout):
+			slog.Warn("ByteSlice channel stats", "msg", "Failed To Read in time")
+		}
+	}
 }

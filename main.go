@@ -36,7 +36,7 @@ func main() {
 
 	/* initialise the channel package */
 	cp := global.ChanPkg{
-		ByteSlice:  make(chan []byte),
+		ByteSlice:  make(chan []byte, global.ByteSliceBufferSize),
 		Cancel:     make(chan bool),
 		ReqDidResp: make(chan bool),
 		DIDResp:    make(chan global.DIDResponse),
