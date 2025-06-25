@@ -91,7 +91,8 @@ func Start(cnf *config.Config, cp global.ChanPkg) error {
 	slog.Debug("Starting the websocket listener")
 	go bpWebsocket(cp, &wg, stream)
 
-	if global.LogLevel == slog.LevelInfo || global.LogLevel == slog.LevelError {
+	// Only report buffer status during debug
+	if global.LogLevel == slog.LevelDebug {
 		go reportBsChanBuf(cp)
 	}
 
@@ -159,6 +160,12 @@ func checkForTerms(cnf *config.Config, msg *global.Message) bool {
 		return false // don't waste time on an empty record
 	}
 
+	// If DebugPosts is true and logging is set to Debug, this will print the
+	// content of posts to the log
+	if global.DebugPosts && global.LogLevel == slog.LevelDebug {
+		slog.Debug("Post data", "text", msg.Commit.Record.Text)
+	}
+
 	strLower := strings.ToLower(msg.Commit.Record.Text)
 	for _, v := range cnf.Terms {
 
@@ -214,7 +221,7 @@ func reportBsChanBuf(cp global.ChanPkg) {
 	for {
 		select {
 		case <-tick.C:
-			slog.Info("ByteSlice channel stats", "BufferSize", "10", "ItemsInBuffer", len(cp.ByteSlice))
+			slog.Debug("ByteSlice channel stats", "BufferSize", "10", "ItemsInBuffer", len(cp.ByteSlice))
 		case <-time.After(timeout):
 			slog.Warn("ByteSlice channel stats", "msg", "Failed To Read in time")
 		}

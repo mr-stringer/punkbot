@@ -28,10 +28,11 @@ const ByteSliceBufferSize = 10
 var ReleaseVersion string = "Development"
 var BuildTime string
 
-/* Global var for logging level */
+/* Global var for logging level & Debug Posts */
 /* I don't really like global vars, but it gets written once and is read once */
 /* so it should be safe */
 var LogLevel slog.Level = slog.LevelInfo
+var DebugPosts bool = false
 
 type Commit struct {
 	CID        string `json:"cid"`

@@ -166,6 +166,7 @@ Punkbot supports four command line flags:
 | -o | path to log output file | Specifies the location of the file to use for logging, default logging is to screen |
 | -j | none | Switches logging mode to JSON, default is text |
 | -l | string | Sets the logging level can be set to: `err`, `warn`, `info`(default) or `debug` | 
+| -debugPosts | bool | When set to `true` and logging is set to `debug`, this will log the text contained in every post processed and is very noisy. Default is `false` | 
 
 None of the command line arguments are mandatory.
 

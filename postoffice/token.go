@@ -44,12 +44,12 @@ func getToken(cnf *config.Config) (*global.DIDResponse, error) {
 	return &tokenResponse, nil
 }
 
-func getRefresh(current *global.DIDResponse) (*global.DIDResponse, error) {
+func getRefresh(current *global.DIDResponse) error {
 	url := fmt.Sprintf("%s/%s", global.ApiUrl, global.RefreshEndpoint)
 	req, err := http.NewRequest("POST", url, nil)
 	if err != nil {
 		slog.Error("Error creating request", "error", err)
-		return nil, err
+		return err
 	}
 
 	req.Header.Set("Authorization", fmt.Sprintf("Bearer %s", current.RefreshJwt))
@@ -59,19 +59,20 @@ func getRefresh(current *global.DIDResponse) (*global.DIDResponse, error) {
 	resp, err := client.Do(req)
 	if err != nil {
 		slog.Error("Error sending request", "error", err)
-		return nil, err
+		return err
 	}
 	if resp.StatusCode != http.StatusOK {
 		slog.Error("Unexpected status code", "status", resp)
-		return nil, err
+		return err
 	}
 
 	var tokenResponse global.DIDResponse
 	if err := json.NewDecoder(resp.Body).Decode(&tokenResponse); err != nil {
 		slog.Error("Failed to marshall respond to DIDResponse type")
-		return nil, err
+		return err
 	}
 
 	slog.Debug("Refreshed Access Token", "newToken", tokenResponse.AccessJwt)
-	return &tokenResponse, nil
+	current = &tokenResponse
+	return nil
 }
