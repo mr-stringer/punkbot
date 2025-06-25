@@ -19,12 +19,14 @@ func ProcessFlags() (*ClArgs, error) {
 	cl := ClArgs{}
 	var ver bool
 	var json bool
+	var debugPost bool
 
 	logLevelPtr := flag.String("l", "info", "used to set the logging level, may be err, warn, info or debug")
 	configFilePathPtr := flag.String("f", "", "specifies the location of the configuration file")
 	flag.BoolVar(&ver, "v", false, "prints the version and quits")
 	logPathPtr := flag.String("o", "", "specifies the path of the log file, default logging happens in the console")
 	flag.BoolVar(&json, "j", false, "sets json log format")
+	flag.BoolVar(&debugPost, "p", false, "if enabled, debug logging will include all scanned posts - very noisy!")
 	flag.Parse()
 
 	cl.JsonLog = json
@@ -46,6 +48,10 @@ func ProcessFlags() (*ClArgs, error) {
 		global.LogLevel = slog.LevelDebug
 	default:
 		return nil, fmt.Errorf("log level '%s' not supported", *logLevelPtr)
+	}
+
+	if debugPost {
+		global.DebugPosts = true
 	}
 
 	if ver {

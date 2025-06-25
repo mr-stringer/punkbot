@@ -51,7 +51,7 @@ func DIDResponseServer(cnf *config.Config, cp global.ChanPkg) {
 		case <-ticker.C:
 			slog.Debug("Attempting to refresh access token")
 			for i := 0; i < global.TokenRefreshAttempts; i++ {
-				d, err = getRefresh(d)
+				err = getRefresh(d)
 				if err != nil {
 					slog.Warn("Failed to refresh token", "Attempt", i+1)
 				} else {
