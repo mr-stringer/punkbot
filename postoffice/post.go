@@ -31,7 +31,7 @@ func PreFlightCheck(cnf *config.Config) error {
 
 func DIDResponseServer(cnf *config.Config, cp global.ChanPkg) {
 	slog.Info("Starting the DID Response server")
-	slog.Debug("Getting token")
+	slog.Info("Getting token")
 	d, err := getToken(cnf)
 	if err != nil {
 		slog.Error("Failed to get token")
@@ -45,13 +45,13 @@ func DIDResponseServer(cnf *config.Config, cp global.ChanPkg) {
 		slog.Debug("DIDResponseServer, in the loop", "AccessTokenHash", global.StrHash(d.AccessJwt))
 		select {
 		case <-cp.ReqDidResp:
-			slog.Info("Request for DID Response")
+			slog.Info("Request for DID Response", "AccessTokenHash", global.StrHash(d.AccessJwt))
 			// dereference to send copy of DID Response
 			cp.DIDResp <- *d
 		case <-ticker.C:
 			slog.Debug("Attempting to refresh access token")
 			for i := 0; i < global.TokenRefreshAttempts; i++ {
-				err = getRefresh(d)
+				err = getRefresh(&d)
 				if err != nil {
 					slog.Warn("Failed to refresh token", "Attempt", i+1)
 				} else {

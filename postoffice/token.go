@@ -44,7 +44,7 @@ func getToken(cnf *config.Config) (*global.DIDResponse, error) {
 	return &tokenResponse, nil
 }
 
-func getRefresh(current *global.DIDResponse) error {
+func getRefresh(current **global.DIDResponse) error {
 	url := fmt.Sprintf("%s/%s", global.ApiUrl, global.RefreshEndpoint)
 	req, err := http.NewRequest("POST", url, nil)
 	if err != nil {
@@ -52,7 +52,7 @@ func getRefresh(current *global.DIDResponse) error {
 		return err
 	}
 
-	req.Header.Set("Authorization", fmt.Sprintf("Bearer %s", current.RefreshJwt))
+	req.Header.Set("Authorization", fmt.Sprintf("Bearer %s", (*current).RefreshJwt))
 	req.Header.Set("Content-Type", "application/json")
 
 	client := &http.Client{}
@@ -72,7 +72,7 @@ func getRefresh(current *global.DIDResponse) error {
 		return err
 	}
 
-	slog.Debug("Refreshed Access Token", "newToken", tokenResponse.AccessJwt)
-	current = &tokenResponse
+	slog.Debug("Refreshed Access Token", "val", global.StrHash(tokenResponse.AccessJwt))
+	*current = &tokenResponse
 	return nil
 }
