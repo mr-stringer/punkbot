@@ -5,7 +5,13 @@ go 1.24.0
 require (
 	github.com/gorilla/websocket v1.5.3
 	github.com/spf13/viper v1.20.1
-)
+	)
+
+replace github.com/mr-stringer/punkbot/bot => ./bot
+replace	github.com/mr-stringer/punkbot/config => ./config
+replace	github.com/mr-stringer/punkbot/config => ./config
+replace	github.com/mr-stringer/punkbot/global => ./global
+replace	github.com/mr-stringer/punkbot/postoffice => ./postoffice
 
 require (
 	github.com/fsnotify/fsnotify v1.8.0 // indirect
