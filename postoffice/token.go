@@ -26,6 +26,7 @@ func getToken(cnf *config.Config) (*global.DIDResponse, error) {
 	resp, err := http.Post(url, "application/json", bytes.NewBuffer(requestBody))
 	if err != nil {
 		slog.Error("Failed to send request")
+		slog.Error(err.Error())
 		return nil, err
 	}
 	defer resp.Body.Close()

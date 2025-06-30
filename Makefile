@@ -12,4 +12,4 @@ test:
 
 
 build:
-	go build -ldflags="$(LDFLAGS)"
+	go build -ldflags="$(LDFLAGS)" -o punkbot
