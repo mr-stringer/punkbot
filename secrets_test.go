@@ -1,11 +1,11 @@
-package config
+package main
 
 import (
 	"os"
 	"testing"
 )
 
-func TestConfig_GetSecretFromEnv(t *testing.T) {
+func TestGetSecretFromEnv(t *testing.T) {
 	type fields struct {
 		Identifier string
 		Hashtags   []string
@@ -39,7 +39,7 @@ func TestConfig_GetSecretFromEnv(t *testing.T) {
 	}
 }
 
-func TestConfig_GetSecret(t *testing.T) {
+func Test_GetSecret(t *testing.T) {
 	type fields struct {
 		Identifier      string
 		Hashtags        []string

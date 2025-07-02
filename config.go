@@ -1,11 +1,10 @@
-package config
+package main
 
 import (
 	"fmt"
 	"log/slog"
 	"os"
 
-	"github.com/mr-stringer/punkbot/global"
 	"github.com/spf13/viper"
 )
 
@@ -15,23 +14,6 @@ import (
 // If the "JetStreamServer" argument is not configured, the bot will test the
 // latency of the four public servers and connect to the one with the lowest
 // latency.
-
-type ClArgs struct {
-	LogLevel       slog.Level
-	ConfigFilePath string
-	LogPath        string
-	JsonLog        bool
-}
-type Config struct {
-	Identifier string
-	Terms      []string
-	//Add jetstream instance, allowing users to set their preferred instance
-	//Also add the ability to auto select public instance automatically based on
-	//latency
-	JetStreamServer string
-	password        string //unexported
-
-}
 
 func GetConfig(path string) (*Config, error) {
 	slog.Info("Attempting to read config")
@@ -75,7 +57,7 @@ func GetConfig(path string) (*Config, error) {
 		err = cnf.FindFastestServer(MeasureLatency)
 		if err != nil {
 			slog.Error("No usable server found, cannot continue")
-			os.Exit(global.ExitJetStreamFailure)
+			os.Exit(ExitJetStreamFailure)
 		}
 	}
 	return &cnf, nil

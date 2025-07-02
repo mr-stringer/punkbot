@@ -1,4 +1,4 @@
-package bot
+package main
 
 import (
 	"encoding/json"
@@ -14,12 +14,9 @@ import (
 	"unicode"
 
 	"github.com/gorilla/websocket"
-	"github.com/mr-stringer/punkbot/config"
-	"github.com/mr-stringer/punkbot/global"
-	"github.com/mr-stringer/punkbot/postoffice"
 )
 
-func bpWebsocket(cp global.ChanPkg, wg *sync.WaitGroup, url string) {
+func bpWebsocket(cp ChanPkg, wg *sync.WaitGroup, url string) {
 	slog.Info("bpWebsocket started")
 	/* The bot is the oly thing that needs to be cleaned up therefore the bot */
 	/* listens for SIGINT and SIGTERM, it then requests all go routines to    */
@@ -33,7 +30,7 @@ func bpWebsocket(cp global.ChanPkg, wg *sync.WaitGroup, url string) {
 		conn, err = connectWebsocket(url)
 		if err != nil {
 			slog.Error("Error connecting to websocket", "err", err.Error())
-			time.Sleep(time.Duration(global.WebsocketTimeout) * time.Second)
+			time.Sleep(time.Duration(WebsocketTimeout) * time.Second)
 			continue
 		}
 		quit := handleWebsocket(conn, cp)
@@ -44,7 +41,7 @@ func bpWebsocket(cp global.ChanPkg, wg *sync.WaitGroup, url string) {
 }
 
 // returns true if parent should quit
-func handleWebsocket(conn *websocket.Conn, cp global.ChanPkg) bool {
+func handleWebsocket(conn *websocket.Conn, cp ChanPkg) bool {
 	defer conn.Close()
 
 	sig := make(chan os.Signal, 1)
@@ -54,7 +51,7 @@ func handleWebsocket(conn *websocket.Conn, cp global.ChanPkg) bool {
 		select {
 		case <-sig:
 			slog.Warn("Instruction to quit received, shutting down")
-			for i := 0; i < global.ByteWorker; i++ {
+			for i := 0; i < ByteWorker; i++ {
 				cp.Cancel <- true
 			}
 			return true
@@ -77,9 +74,9 @@ func connectWebsocket(url string) (*websocket.Conn, error) {
 	return c, nil
 }
 
-func Start(cnf *config.Config, cp global.ChanPkg) error {
+func Start(cnf *Config, cp ChanPkg) error {
 
-	var workers int = global.ByteWorker
+	var workers int = ByteWorker
 	var wg sync.WaitGroup
 	slog.Debug("Starting byte handlers")
 	for i := 0; i < workers; i++ {
@@ -87,12 +84,12 @@ func Start(cnf *config.Config, cp global.ChanPkg) error {
 		go handleBytes(cnf, &wg, i, cp)
 	}
 
-	stream := fmt.Sprintf("%s%s%s", global.ServerArgsPre, cnf.JetStreamServer, global.ServerArgsPost)
+	stream := fmt.Sprintf("%s%s%s", ServerArgsPre, cnf.JetStreamServer, ServerArgsPost)
 	slog.Debug("Starting the websocket listener")
 	go bpWebsocket(cp, &wg, stream)
 
 	// Only report buffer status during debug
-	if global.LogLevel == slog.LevelDebug {
+	if LogLevel == slog.LevelDebug {
 		go reportBsChanBuf(cp)
 	}
 
@@ -101,7 +98,7 @@ func Start(cnf *config.Config, cp global.ChanPkg) error {
 	return nil
 }
 
-func handleBytes(cnf *config.Config, wg *sync.WaitGroup, id int, cp global.ChanPkg) {
+func handleBytes(cnf *Config, wg *sync.WaitGroup, id int, cp ChanPkg) {
 	slog.Debug("Worker starting", "WorkerId", id)
 	for {
 		select {
@@ -111,7 +108,7 @@ func handleBytes(cnf *config.Config, wg *sync.WaitGroup, id int, cp global.ChanP
 			return
 		case ba := <-cp.ByteSlice:
 			slog.Debug("Data received", "WorkerId", id, "Length", len(ba))
-			var msg global.Message
+			var msg Message
 			err := json.Unmarshal(ba, &msg)
 			if err != nil {
 				slog.Error("Couldn't unmarshal message", "error", err.Error())
@@ -126,7 +123,7 @@ func handleBytes(cnf *config.Config, wg *sync.WaitGroup, id int, cp global.ChanP
 	}
 }
 
-func handleMessage(cnf *config.Config, id int, msg *global.Message, cp global.ChanPkg) error {
+func handleMessage(cnf *Config, id int, msg *Message, cp ChanPkg) error {
 	/* We only want to repost and like original posts, not replies. */
 	/* Check if there is a reply path */
 	if msg.Commit.Record.Reply.Parent.URI != "" {
@@ -136,7 +133,7 @@ func handleMessage(cnf *config.Config, id int, msg *global.Message, cp global.Ch
 	if checkForTerms(cnf, msg) {
 		slog.Info("Found a match", "WorkerId", id, "Msg", msg.Commit.Record.Text)
 		//TODO new post office logic user client/server model
-		err := postoffice.Ral(cnf, msg, cp)
+		err := Ral(cnf, msg, cp)
 		if err != nil {
 			slog.Error("Repost failed", "err", err.Error())
 		}
@@ -145,24 +142,14 @@ func handleMessage(cnf *config.Config, id int, msg *global.Message, cp global.Ch
 	return nil
 }
 
-//func checkHashtags(cnf *config.Config, msg *global.Message) bool {
-//	/* Check if hastags are present in the message */
-//	for _, v := range cnf.Terms {
-//		if strings.Contains(strings.ToLower(msg.Commit.Record.Text), strings.ToLower(v)) {
-//			return true
-//		}
-//	}
-//	return false
-//}
-
-func checkForTerms(cnf *config.Config, msg *global.Message) bool {
+func checkForTerms(cnf *Config, msg *Message) bool {
 	if msg.Commit.Record.Text == "" {
 		return false // don't waste time on an empty record
 	}
 
 	// If DebugPosts is true and logging is set to Debug, this will print the
 	// content of posts to the log
-	if global.DebugPosts && global.LogLevel == slog.LevelDebug {
+	if DebugPosts && LogLevel == slog.LevelDebug {
 		slog.Debug("Post data", "text", msg.Commit.Record.Text)
 	}
 
@@ -213,7 +200,7 @@ func checkForTerms(cnf *config.Config, msg *global.Message) bool {
 	return false
 }
 
-func reportBsChanBuf(cp global.ChanPkg) {
+func reportBsChanBuf(cp ChanPkg) {
 	// Run forever just spitting out the current byteslice buffer every minute
 	tick := time.NewTicker(time.Second * 60)
 	defer tick.Stop()

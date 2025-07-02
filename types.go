@@ -1,4 +1,4 @@
-package global
+package main
 
 import "log/slog"
 
@@ -33,6 +33,23 @@ var BuildTime string
 /* so it should be safe */
 var LogLevel slog.Level = slog.LevelInfo
 var DebugPosts bool = false
+
+type ClArgs struct {
+	LogLevel       slog.Level
+	ConfigFilePath string
+	LogPath        string
+	JsonLog        bool
+}
+type Config struct {
+	Identifier string
+	Terms      []string
+	//Add jetstream instance, allowing users to set their preferred instance
+	//Also add the ability to auto select public instance automatically based on
+	//latency
+	JetStreamServer string
+	password        string //unexported
+
+}
 
 type Commit struct {
 	CID        string `json:"cid"`

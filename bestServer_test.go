@@ -1,7 +1,8 @@
-package config
+package main
 
 import (
 	"fmt"
+	"os"
 	"testing"
 	"time"
 )
@@ -19,7 +20,10 @@ func MockLatencyTestGood(address string) (*time.Duration, error) {
 func MockLatencyTestErr(address string) (*time.Duration, error) {
 	return nil, fmt.Errorf("there was a problem")
 }
-func TestConfig_FindFastestServer(t *testing.T) {
+func TestFindFastestServer(t *testing.T) {
+	stderr := os.Stderr
+	defer func() { os.Stdout = stderr }()
+	os.Stderr = os.NewFile(0, os.DevNull)
 	type fields struct {
 		Identifier      string
 		Hashtags        []string

@@ -7,12 +7,6 @@ require (
 	github.com/spf13/viper v1.20.1
 	)
 
-replace github.com/mr-stringer/punkbot/bot => ./bot
-replace	github.com/mr-stringer/punkbot/config => ./config
-replace	github.com/mr-stringer/punkbot/config => ./config
-replace	github.com/mr-stringer/punkbot/global => ./global
-replace	github.com/mr-stringer/punkbot/postoffice => ./postoffice
-
 require (
 	github.com/fsnotify/fsnotify v1.8.0 // indirect
 	github.com/go-viper/mapstructure/v2 v2.2.1 // indirect

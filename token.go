@@ -1,4 +1,4 @@
-package postoffice
+package main
 
 import (
 	"bytes"
@@ -6,12 +6,9 @@ import (
 	"fmt"
 	"log/slog"
 	"net/http"
-
-	"github.com/mr-stringer/punkbot/config"
-	"github.com/mr-stringer/punkbot/global"
 )
 
-func getToken(cnf *config.Config) (*global.DIDResponse, error) {
+func getToken(cnf *Config) (*DIDResponse, error) {
 	requestBody, err := json.Marshal(map[string]string{
 		"identifier": cnf.Identifier,
 		"password":   cnf.GetSecret(),
@@ -21,7 +18,7 @@ func getToken(cnf *config.Config) (*global.DIDResponse, error) {
 		return nil, err
 	}
 
-	url := fmt.Sprintf("%s/%s", global.ApiUrl, global.CreateSessionEndpoint)
+	url := fmt.Sprintf("%s/%s", ApiUrl, CreateSessionEndpoint)
 
 	resp, err := http.Post(url, "application/json", bytes.NewBuffer(requestBody))
 	if err != nil {
@@ -36,7 +33,7 @@ func getToken(cnf *config.Config) (*global.DIDResponse, error) {
 		return nil, fmt.Errorf("unexpected status code: %d", resp.StatusCode)
 	}
 
-	var tokenResponse global.DIDResponse
+	var tokenResponse DIDResponse
 	if err := json.NewDecoder(resp.Body).Decode(&tokenResponse); err != nil {
 		slog.Error("Failed to marshall respond to DIDResponse type")
 		return nil, err
@@ -45,8 +42,8 @@ func getToken(cnf *config.Config) (*global.DIDResponse, error) {
 	return &tokenResponse, nil
 }
 
-func getRefresh(current **global.DIDResponse) error {
-	url := fmt.Sprintf("%s/%s", global.ApiUrl, global.RefreshEndpoint)
+func getRefresh(current **DIDResponse) error {
+	url := fmt.Sprintf("%s/%s", ApiUrl, RefreshEndpoint)
 	req, err := http.NewRequest("POST", url, nil)
 	if err != nil {
 		slog.Error("Error creating request", "error", err)
@@ -67,13 +64,13 @@ func getRefresh(current **global.DIDResponse) error {
 		return err
 	}
 
-	var tokenResponse global.DIDResponse
+	var tokenResponse DIDResponse
 	if err := json.NewDecoder(resp.Body).Decode(&tokenResponse); err != nil {
 		slog.Error("Failed to marshall respond to DIDResponse type")
 		return err
 	}
 
-	slog.Debug("Refreshed Access Token", "val", global.StrHash(tokenResponse.AccessJwt))
+	slog.Debug("Refreshed Access Token", "val", StrHash(tokenResponse.AccessJwt))
 	*current = &tokenResponse
 	return nil
 }
