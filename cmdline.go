@@ -1,12 +1,10 @@
-package config
+package main
 
 import (
 	"flag"
 	"fmt"
 	"log/slog"
 	"os"
-
-	"github.com/mr-stringer/punkbot/global"
 )
 
 // Process is the function that handles the command line flags. The flags
@@ -36,27 +34,27 @@ func ProcessFlags() (*ClArgs, error) {
 	switch *logLevelPtr {
 	case "err":
 		cl.LogLevel = slog.LevelError
-		global.LogLevel = slog.LevelError
+		LogLevel = slog.LevelError
 	case "warn":
 		cl.LogLevel = slog.LevelWarn
-		global.LogLevel = slog.LevelWarn
+		LogLevel = slog.LevelWarn
 	case "info":
 		cl.LogLevel = slog.LevelInfo
-		global.LogLevel = slog.LevelInfo
+		LogLevel = slog.LevelInfo
 	case "debug":
 		cl.LogLevel = slog.LevelDebug
-		global.LogLevel = slog.LevelDebug
+		LogLevel = slog.LevelDebug
 	default:
 		return nil, fmt.Errorf("log level '%s' not supported", *logLevelPtr)
 	}
 
 	if debugPost {
-		global.DebugPosts = true
+		DebugPosts = true
 	}
 
 	if ver {
-		fmt.Printf("Version:\t%s\n", global.ReleaseVersion)
-		fmt.Printf("BuildTime:\t%s\n", global.BuildTime)
+		fmt.Printf("Version:\t%s\n", ReleaseVersion)
+		fmt.Printf("BuildTime:\t%s\n", BuildTime)
 		os.Exit(0)
 	}
 

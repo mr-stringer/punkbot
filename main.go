@@ -3,59 +3,54 @@ package main
 import (
 	"log/slog"
 	"os"
-
-	"github.com/mr-stringer/punkbot/bot"
-	"github.com/mr-stringer/punkbot/config"
-	"github.com/mr-stringer/punkbot/global"
-	"github.com/mr-stringer/punkbot/postoffice"
 )
 
 func main() {
 
-	cl, err := config.ProcessFlags()
+	cl, err := ProcessFlags()
 	if err != nil {
 		slog.Error("Failed to process command line flags", "error", err.Error())
-		os.Exit(global.ExitCmdLineArgsFailure)
+		os.Exit(ExitCmdLineArgsFailure)
 	}
 
 	//configure the logger
 	err = loggerConfig(cl)
 	if err != nil {
 		slog.Error("Failed to configure the logger", "err", err.Error())
-		os.Exit(global.ExitConfigFailure)
+		os.Exit(ExitConfigFailure)
 	}
 
 	/*Source config*/
-	cnf, err := config.GetConfig(cl.ConfigFilePath)
+	cnf, err := GetConfig(cl.ConfigFilePath)
 	if err != nil {
 		slog.Error("Error getting config", "err", err.Error())
-		os.Exit(global.ExitConfigFailure)
+		os.Exit(ExitConfigFailure)
 	}
 
 	slog.Info(cnf.GetSecret())
 
 	/* initialise the channel package */
-	cp := global.ChanPkg{
-		ByteSlice:  make(chan []byte, global.ByteSliceBufferSize),
+	cp := ChanPkg{
+		ByteSlice:  make(chan []byte, ByteSliceBufferSize),
 		Cancel:     make(chan bool),
 		ReqDidResp: make(chan bool),
-		DIDResp:    make(chan global.DIDResponse),
+		DIDResp:    make(chan DIDResponse),
 	}
 
 	/*Start the DID Response server*/
-	go postoffice.DIDResponseServer(cnf, cp)
+	go DIDResponseServer(cnf, cp)
 
 	slog.Info("Starting the bot")
-	err = bot.Start(cnf, cp)
+	err = Start(cnf, cp)
 	if err != nil {
-		os.Exit(global.ExitBotFailure)
+		os.Exit(ExitBotFailure)
 	}
 
 	slog.Info("Shutdown complete")
 
 }
 
-func loggerConfig(cl *config.ClArgs) error {
+func loggerConfig(cl *ClArgs) error {
 	var lf *os.File = nil
 	var err error
 

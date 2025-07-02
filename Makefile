@@ -6,10 +6,6 @@ all: test build
 
 test:
 	go test -v
-	go test -v github.com/mr-stringer/punkbot/config
-	go test -v github.com/mr-stringer/punkbot/bot
-	go test -v github.com/mr-stringer/punkbot/postoffice
-
 
 build:
 	go build -ldflags="$(LDFLAGS)" -o punkbot

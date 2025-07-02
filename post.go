@@ -1,4 +1,4 @@
-package postoffice
+package main
 
 import (
 	"bytes"
@@ -8,14 +8,11 @@ import (
 	"net/http"
 	"os"
 	"time"
-
-	"github.com/mr-stringer/punkbot/config"
-	"github.com/mr-stringer/punkbot/global"
 )
 
 // The purpose of PreFlightCheck is to ensure a JwtToken can be retrieved from
 // the API, if not, we quit.
-func PreFlightCheck(cnf *config.Config) error {
+func PreFlightCheck(cnf *Config) error {
 	slog.Info("Starting the postoffice")
 	slog.Info("Get token")
 	/*Getting a token checks we can authenticate, this saves us from waiting for
@@ -29,28 +26,28 @@ func PreFlightCheck(cnf *config.Config) error {
 	return nil
 }
 
-func DIDResponseServer(cnf *config.Config, cp global.ChanPkg) {
+func DIDResponseServer(cnf *Config, cp ChanPkg) {
 	slog.Info("Starting the DID Response server")
 	slog.Info("Getting token")
 	d, err := getToken(cnf)
 	if err != nil {
 		slog.Error("Failed to get token")
-		os.Exit(global.ExitGetToken)
+		os.Exit(ExitGetToken)
 	}
 
 	/*Configure refresh ticker*/
 	ticker := time.NewTicker(time.Second * 60)
 
 	for {
-		slog.Debug("DIDResponseServer, in the loop", "AccessTokenHash", global.StrHash(d.AccessJwt))
+		slog.Debug("DIDResponseServer, in the loop", "AccessTokenHash", StrHash(d.AccessJwt))
 		select {
 		case <-cp.ReqDidResp:
-			slog.Info("Request for DID Response", "AccessTokenHash", global.StrHash(d.AccessJwt))
+			slog.Info("Request for DID Response", "AccessTokenHash", StrHash(d.AccessJwt))
 			// dereference to send copy of DID Response
 			cp.DIDResp <- *d
 		case <-ticker.C:
 			slog.Debug("Attempting to refresh access token")
-			for i := 0; i < global.TokenRefreshAttempts; i++ {
+			for i := 0; i < TokenRefreshAttempts; i++ {
 				err = getRefresh(&d)
 				if err != nil {
 					slog.Warn("Failed to refresh token", "Attempt", i+1)
@@ -58,11 +55,11 @@ func DIDResponseServer(cnf *config.Config, cp global.ChanPkg) {
 					// if err != nil, we can break out of the retry loop
 					break
 				}
-				time.Sleep(time.Second * global.TokenRefreshTimeout)
+				time.Sleep(time.Second * TokenRefreshTimeout)
 			}
 			if err != nil {
 				slog.Error("Could not refresh token", "error", err.Error())
-				os.Exit(global.ExitGetToken)
+				os.Exit(ExitGetToken)
 			}
 		}
 	}
@@ -71,14 +68,14 @@ func DIDResponseServer(cnf *config.Config, cp global.ChanPkg) {
 
 // Ral (RePost and Like), uses the configured user to re-posts and like the
 // provided message
-func Ral(cnf *config.Config, msg *global.Message, cp global.ChanPkg) error {
+func Ral(cnf *Config, msg *Message, cp ChanPkg) error {
 	//Request a copy of the latest DID Response
 	cp.ReqDidResp <- true
 	dr := <-cp.DIDResp
 
 	uri := fmt.Sprintf("at://%s/app.bsky.feed.post/%s", msg.DID, msg.Commit.RKey)
 
-	resource := &global.CreateRecordProps{
+	resource := &CreateRecordProps{
 		DIDResponse: &dr,
 		Resource:    "app.bsky.feed.repost",
 		URI:         uri,
@@ -101,7 +98,7 @@ func Ral(cnf *config.Config, msg *global.Message, cp global.ChanPkg) error {
 	return nil
 }
 
-func createRecord(r *global.CreateRecordProps) error {
+func createRecord(r *CreateRecordProps) error {
 	body := map[string]interface{}{
 		"$type":      r.Resource,
 		"collection": r.Resource,
@@ -121,7 +118,7 @@ func createRecord(r *global.CreateRecordProps) error {
 		return err
 	}
 
-	url := fmt.Sprintf("%s/%s", global.ApiUrl, global.CreatePostEndpoint)
+	url := fmt.Sprintf("%s/%s", ApiUrl, CreatePostEndpoint)
 	req, err := http.NewRequest("POST", url, bytes.NewBuffer(jsonBody))
 	if err != nil {
 		slog.Error("Error creating request", "error", err, "r.Resource", r.Resource)

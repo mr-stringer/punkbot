@@ -1,4 +1,4 @@
-package config
+package main
 
 import (
 	"fmt"
@@ -7,7 +7,6 @@ import (
 	"time"
 
 	"github.com/gorilla/websocket"
-	"github.com/mr-stringer/punkbot/global"
 )
 
 func (c *Config) FindFastestServer(ml MeasureLatencyType) error {
@@ -24,7 +23,7 @@ func (c *Config) FindFastestServer(ml MeasureLatencyType) error {
 	best := ""
 	for _, v := range servers {
 
-		t, err := ml(fmt.Sprintf("%s%s%s", global.ServerArgsPre, v, global.ServerArgsPost))
+		t, err := ml(fmt.Sprintf("%s%s%s", ServerArgsPre, v, ServerArgsPost))
 
 		if err != nil {
 			slog.Error("Problem checking latency", "server", v, "err", err.Error())
