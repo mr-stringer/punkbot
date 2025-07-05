@@ -6,7 +6,7 @@ import (
 	"testing"
 )
 
-func Test_GetConfig(t *testing.T) {
+func TestGetConfig(t *testing.T) {
 	type args struct {
 		path string
 	}
