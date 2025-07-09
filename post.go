@@ -2,11 +2,13 @@ package main
 
 import (
 	"bytes"
+	"context"
 	"encoding/json"
 	"fmt"
 	"log/slog"
 	"net/http"
 	"os"
+	"sync"
 	"time"
 )
 
@@ -26,12 +28,15 @@ func PreFlightCheck(cnf *Config) error {
 	return nil
 }
 
-func DIDResponseServer(cnf *Config, cp ChanPkg) {
+func DIDResponseServer(ctx context.Context, wg *sync.WaitGroup, cnf *Config, cp ChanPkg) {
+	defer wg.Done()
+
 	slog.Info("Starting the DID Response server")
 	slog.Info("Getting token")
 	d, err := getToken(cnf)
 	if err != nil {
-		slog.Error("Failed to get token")
+		slog.Error("Failed to get token", "err", err.Error())
+		/*Don't clean up, just exit*/
 		os.Exit(ExitGetToken)
 	}
 
@@ -61,6 +66,10 @@ func DIDResponseServer(cnf *Config, cp ChanPkg) {
 				slog.Error("Could not refresh token", "error", err.Error())
 				os.Exit(ExitGetToken)
 			}
+		case <-ctx.Done():
+			/* No need to decrement the wait groups, it's already deferred    */
+			slog.Info("DIDResponseServer shutting down")
+			return
 		}
 	}
 

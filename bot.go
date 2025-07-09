@@ -1,22 +1,20 @@
 package main
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
-	"log"
 	"log/slog"
-	"os"
-	"os/signal"
 	"strings"
 	"sync"
-	"syscall"
 	"time"
 	"unicode"
 
 	"github.com/gorilla/websocket"
 )
 
-func bpWebsocket(cp ChanPkg, wg *sync.WaitGroup, url string) {
+func bpWebsocket(ctx context.Context, cp ChanPkg, wg *sync.WaitGroup, url string) {
+	defer wg.Done()
 	slog.Info("bpWebsocket started")
 	/* The bot is the oly thing that needs to be cleaned up therefore the bot */
 	/* listens for SIGINT and SIGTERM, it then requests all go routines to    */
@@ -26,44 +24,49 @@ func bpWebsocket(cp ChanPkg, wg *sync.WaitGroup, url string) {
 	var err error
 	// loop forever!
 	for {
-		slog.Info("Attempting websocket connection")
-		conn, err = connectWebsocket(url)
-		if err != nil {
-			slog.Error("Error connecting to websocket", "err", err.Error())
-			time.Sleep(time.Duration(WebsocketTimeout) * time.Second)
-			continue
-		}
-		quit := handleWebsocket(conn, cp)
-		if quit {
+		select {
+		case <-ctx.Done():
+			/* Allow time for workers to stop */
+			slog.Info("bpWebsocket shutting down")
 			return
+		default:
+			slog.Info("Attempting websocket connection")
+			conn, err = connectWebsocket(url)
+			if err != nil {
+				slog.Error("Error connecting to websocket", "err", err.Error())
+				time.Sleep(time.Duration(WebsocketTimeout) * time.Second)
+				continue
+			}
+			wg.Add(1)
+			handleWebsocket(ctx, wg, conn, cp)
+
 		}
 	}
 }
 
 // returns true if parent should quit
-func handleWebsocket(conn *websocket.Conn, cp ChanPkg) bool {
+func handleWebsocket(ctx context.Context, wg *sync.WaitGroup, conn *websocket.Conn, cp ChanPkg) {
+	defer wg.Done()
 	defer conn.Close()
 
-	sig := make(chan os.Signal, 1)
-	signal.Notify(sig, syscall.SIGINT, syscall.SIGTERM)
+	slog.Info("handleWebsocket started")
 
-	for {
-		select {
-		case <-sig:
-			slog.Warn("Instruction to quit received, shutting down")
-			for i := 0; i < ByteWorker; i++ {
-				cp.Cancel <- true
-			}
-			return true
-		default:
+	go func() {
+		for {
 			_, message, err := conn.ReadMessage()
 			if err != nil {
-				log.Printf("read error: %v", err)
-				return false
+				/* Only print a warning if context IS NOT cancelled */
+				slog.Warn("Failed to read message from socket", "error", err)
 			}
 			cp.ByteSlice <- message
+
 		}
-	}
+	}()
+
+	<-ctx.Done()
+	/* Allow time for websocket to close cleanly */
+	time.Sleep(time.Millisecond * 500)
+	slog.Warn("handleWebsocket shutting down")
 }
 
 func connectWebsocket(url string) (*websocket.Conn, error) {
@@ -74,38 +77,36 @@ func connectWebsocket(url string) (*websocket.Conn, error) {
 	return c, nil
 }
 
-func Start(cnf *Config, cp ChanPkg) error {
+func Start(ctx context.Context, wg *sync.WaitGroup, cnf *Config, cp ChanPkg) error {
+	defer wg.Done()
 
 	var workers int = ByteWorker
-	var wg sync.WaitGroup
+
 	slog.Debug("Starting byte handlers")
 	for i := 0; i < workers; i++ {
 		wg.Add(1)
-		go handleBytes(cnf, &wg, i, cp)
+		go handleBytes(ctx, cnf, wg, i, cp)
 	}
 
 	stream := fmt.Sprintf("%s%s%s", ServerArgsPre, cnf.JetStreamServer, ServerArgsPost)
 	slog.Debug("Starting the websocket listener")
-	go bpWebsocket(cp, &wg, stream)
+	wg.Add(1)
+	go bpWebsocket(ctx, cp, wg, stream)
 
 	// Only report buffer status during debug
 	if LogLevel == slog.LevelDebug {
 		go reportBsChanBuf(cp)
 	}
 
-	wg.Wait()
-	slog.Info("Bot shutdown complete")
+	slog.Info("Bot startup complete")
 	return nil
 }
 
-func handleBytes(cnf *Config, wg *sync.WaitGroup, id int, cp ChanPkg) {
-	slog.Debug("Worker starting", "WorkerId", id)
+func handleBytes(ctx context.Context, cnf *Config, wg *sync.WaitGroup, id int, cp ChanPkg) {
+	defer wg.Done()
+	slog.Info("handleBytes worker starting", "WorkerId", id)
 	for {
 		select {
-		case <-cp.Cancel:
-			slog.Info("Cancel received", "WorkerId", id)
-			wg.Done()
-			return
 		case ba := <-cp.ByteSlice:
 			slog.Debug("Data received", "WorkerId", id, "Length", len(ba))
 			var msg Message
@@ -119,6 +120,9 @@ func handleBytes(cnf *Config, wg *sync.WaitGroup, id int, cp ChanPkg) {
 				slog.Warn("Problem handling message", "WorkerId", id, "error", err.Error())
 				//A single message failure does not require us to quit
 			}
+		case <-ctx.Done():
+			slog.Info("handleBytes worker shutting down", "WorkerId", id)
+			return
 		}
 	}
 }
