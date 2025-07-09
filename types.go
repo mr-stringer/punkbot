@@ -128,7 +128,6 @@ type TokenServer struct {
 
 type ChanPkg struct {
 	ByteSlice  chan []byte
-	Cancel     chan bool
 	ReqDidResp chan bool
 	DIDResp    chan DIDResponse
 }

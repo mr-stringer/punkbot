@@ -1,8 +1,12 @@
 package main
 
 import (
+	"context"
 	"log/slog"
 	"os"
+	"os/signal"
+	"sync"
+	"syscall"
 )
 
 func main() {
@@ -29,22 +33,50 @@ func main() {
 
 	slog.Info(cnf.GetSecret())
 
+	/* Create the master context                                              */
+	/* This context will handle all cancelling of the bot and the DID server  */
+	/* Go routines created by these functions will inherit the context and    */
+	/* cleanup should be more straight forward.                               */
+
+	ctx, cancel := context.WithCancel(context.Background())
+
+	/* This anonymous function will trigger the ctx's cancel function in the. */
+	/* a instruct all active routines to close a soon as possible.            */
+	/* Any committed work (such as token refreshes, likes and reposts, should */
+	/* be finished.                                                           */
+	go func() {
+		slog.Info("Listening for cancel signals")
+		sig := make(chan os.Signal, 1)
+		signal.Notify(sig, syscall.SIGINT, syscall.SIGTERM)
+		esig := <-sig
+		slog.Warn("received shutdown signal", "value", esig)
+		slog.Warn("Shutdown started")
+		cancel()
+	}()
+
 	/* initialise the channel package */
 	cp := ChanPkg{
 		ByteSlice:  make(chan []byte, ByteSliceBufferSize),
-		Cancel:     make(chan bool),
 		ReqDidResp: make(chan bool),
 		DIDResp:    make(chan DIDResponse),
 	}
 
-	/*Start the DID Response server*/
-	go DIDResponseServer(cnf, cp)
+	/* Each go routine in increment the wait group */
+	var wg sync.WaitGroup
 
+	/* Start the DID Response server */
+	wg.Add(1)
+	go DIDResponseServer(ctx, &wg, cnf, cp)
+
+	/* Start the bot */
+	wg.Add(1)
 	slog.Info("Starting the bot")
-	err = Start(cnf, cp)
+	err = Start(ctx, &wg, cnf, cp)
 	if err != nil {
 		os.Exit(ExitBotFailure)
 	}
+
+	wg.Wait()
 
 	slog.Info("Shutdown complete")
 
