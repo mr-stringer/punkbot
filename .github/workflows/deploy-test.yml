@@ -41,7 +41,7 @@ jobs:
           username: ${{ secrets.PUNKBOTTEST_USER }}
           key:  ${{ secrets.PUNKBOTTEST_PRIVATE_SSH }}
           fingerprint: ${{ secrets.PUNKBOTTEST_FINGERPRINT }}
-          port: ${{ secrets.PORT }}
+          port: ${{ secrets.PUNKBOTTEST_HOST_PORT }}
           script: |
             docker image pull mrstringer/punkbottest:latest
             docker container stop punkbottest
