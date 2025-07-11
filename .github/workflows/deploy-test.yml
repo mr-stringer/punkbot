@@ -47,5 +47,3 @@ jobs:
             docker container stop punkbottest
             docker container rm punkbottest
             docker container run -d --name punkbottest -v /home/sstringer/ptest/botcnf.yml:/app/botcnf.yml -e PUNKBOT_PASSWORD='${{ secrets.PUNKBOTTEST_BSKY_APP_PASSWORD }}' mrstringer/punkbottest
-
-# docker run -d -v /home/sstringer/ptest/botcnf.yml:/app/botcnf.yml -e PUNKBOT_PASSWORD='yqhy-ckib-nyb4-kauv' mrstringer/punkbot
