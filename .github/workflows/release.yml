@@ -31,6 +31,16 @@ jobs:
     runs-on: ubuntu-latest
   
     steps:
+
+      - name: Remote Access Test
+        uses: appleboy/ssh-action@v1
+        with:
+          host: ${{ secrets.PUNKBOT_HOST }}
+          username: ${{ secrets.PUNKBOT_USER }}
+          port: ${{ secrets.PUNKBOT_HOST_PORT }}
+          key:  ${{ secrets.PUNKBOT_PRIVATE_SSH }}
+          script: date
+
       - name: Checkout
         uses: actions/checkout@v4
 
@@ -58,9 +68,8 @@ jobs:
         with:
           host: ${{ secrets.PUNKBOT_HOST }}
           username: ${{ secrets.PUNKBOT_USER }}
-          key:  ${{ secrets.PUNKBOT_PRIVATE_SSH }}
-          fingerprint: ${{ secrets.PUNKBOT_FINGERPRINT }}
           port: ${{ secrets.PUNKBOT_HOST_PORT }}
+          key:  ${{ secrets.PUNKBOT_PRIVATE_SSH }}
           script: |
             docker image pull mrstringer/punkbot:latest
             docker container stop punkbot
