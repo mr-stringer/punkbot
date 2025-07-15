@@ -31,6 +31,7 @@ func (c *Config) FindFastestServer(ml MeasureLatencyType) error {
 		}
 		if lowest == 0 || *t < *lowestPtr {
 			best = v
+			lowest = *t
 		}
 		slog.Info("Server latency", "server", v, "Milliseconds", t.Milliseconds())
 	}
