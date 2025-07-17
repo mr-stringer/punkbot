@@ -28,14 +28,14 @@ func PreFlightCheck(cnf *Config) error {
 	return nil
 }
 
-func DIDResponseServer(ctx context.Context, wg *sync.WaitGroup, cnf *Config, cp ChanPkg) {
+func sessionServer(ctx context.Context, wg *sync.WaitGroup, cnf *Config, cp ChanPkg) {
 	defer wg.Done()
 
-	slog.Info("Starting the DID Response server")
-	slog.Info("Getting token")
+	slog.Info("Starting the SessionServer")
+	slog.Info("Creating Session")
 	d, err := getToken(cnf)
 	if err != nil {
-		slog.Error("Failed to get token", "err", err.Error())
+		slog.Error("Failed to start session", "err", err.Error())
 		/*Don't clean up, just exit*/
 		os.Exit(ExitGetToken)
 	}
@@ -44,12 +44,12 @@ func DIDResponseServer(ctx context.Context, wg *sync.WaitGroup, cnf *Config, cp 
 	ticker := time.NewTicker(time.Second * 60)
 
 	for {
-		slog.Debug("DIDResponseServer, in the loop", "AccessTokenHash", StrHash(d.AccessJwt))
+		slog.Debug("sessionServer, in the loop", "AccessTokenHash", StrHash(d.AccessJwt))
 		select {
 		case <-cp.ReqDidResp:
-			slog.Info("Request for DID Response", "AccessTokenHash", StrHash(d.AccessJwt))
+			slog.Info("Request for session", "AccessTokenHash", StrHash(d.AccessJwt))
 			// dereference to send copy of DID Response
-			cp.DIDResp <- *d
+			cp.Session <- *d
 		case <-ticker.C:
 			slog.Debug("Attempting to refresh access token")
 			for i := 0; i < TokenRefreshAttempts; i++ {
@@ -68,7 +68,7 @@ func DIDResponseServer(ctx context.Context, wg *sync.WaitGroup, cnf *Config, cp 
 			}
 		case <-ctx.Done():
 			/* No need to decrement the wait groups, it's already deferred    */
-			slog.Info("DIDResponseServer shutting down")
+			slog.Info("SessionServer shutting down")
 			return
 		}
 	}
@@ -78,9 +78,9 @@ func DIDResponseServer(ctx context.Context, wg *sync.WaitGroup, cnf *Config, cp 
 // Ral (RePost and Like), uses the configured user to re-posts and like the
 // provided message
 func Ral(cnf *Config, msg *Message, cp ChanPkg) error {
-	//Request a copy of the latest DID Response
+	//Request a copy of the latest session
 	cp.ReqDidResp <- true
-	dr := <-cp.DIDResp
+	dr := <-cp.Session
 
 	uri := fmt.Sprintf("at://%s/app.bsky.feed.post/%s", msg.DID, msg.Commit.RKey)
 

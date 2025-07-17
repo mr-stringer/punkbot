@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"log/slog"
+	"net/http"
 	"strings"
 	"sync"
 	"time"
@@ -135,9 +136,21 @@ func handleMessage(cnf *Config, id int, msg *Message, cp ChanPkg) error {
 		return nil
 	}
 	if checkForTerms(cnf, msg) {
-		slog.Info("Found a match", "WorkerId", id, "Msg", msg.Commit.Record.Text)
+		slog.Info("Found a match", "WorkerId", id)
+		d, err := resolveDID(msg.DID)
+		if err != nil {
+			slog.Warn("Could not resolve did of message")
+		} else {
+			/*Just use the first alias found for now*/
+			if len(d.AlsoKnownAs) > 0 {
+				uname := strings.TrimPrefix(d.AlsoKnownAs[0], "at://")
+				slog.Info("Match info", "user", uname, "post", msg.Commit.Record.Text)
+			} else {
+				slog.Info("Match info", "post", msg.Commit.Record.Text)
+			}
+		}
 		//TODO new post office logic user client/server model
-		err := Ral(cnf, msg, cp)
+		err = Ral(cnf, msg, cp)
 		if err != nil {
 			slog.Error("Repost failed", "err", err.Error())
 		}
@@ -217,4 +230,37 @@ func reportBsChanBuf(cp ChanPkg) {
 			slog.Warn("ByteSlice channel stats", "msg", "Failed To Read in time")
 		}
 	}
+}
+
+func resolveDID(did string) (*DIDDoc, error) {
+
+	u := fmt.Sprintf("%s/%s", DidLookUpEndpoint, did)
+
+	req, err := http.NewRequest("GET", u, nil)
+	if err != nil {
+		slog.Error("Error creating request", "error", err)
+		return nil, err
+	}
+
+	req.Header.Set("Content-Type", "application/json")
+
+	client := &http.Client{}
+	resp, err := client.Do(req)
+	if err != nil {
+		slog.Error("Failed to resolve did", "Error", err.Error())
+		return nil, err
+	}
+
+	if resp.StatusCode != http.StatusOK {
+		slog.Error("Unexpected status code", "status", resp)
+		return nil, fmt.Errorf("unexpected status code")
+	}
+
+	var result DIDDoc
+	if err := json.NewDecoder(resp.Body).Decode(&result); err != nil {
+		slog.Error("Failed to marshall respond to DIDResponse type")
+		return nil, err
+	}
+
+	return &result, nil
 }
