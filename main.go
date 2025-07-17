@@ -58,15 +58,15 @@ func main() {
 	cp := ChanPkg{
 		ByteSlice:  make(chan []byte, ByteSliceBufferSize),
 		ReqDidResp: make(chan bool),
-		DIDResp:    make(chan DIDResponse),
+		Session:    make(chan DIDResponse),
 	}
 
 	/* Each go routine in increment the wait group */
 	var wg sync.WaitGroup
 
-	/* Start the DID Response server */
+	/* Start the Session Server server */
 	wg.Add(1)
-	go DIDResponseServer(ctx, &wg, cnf, cp)
+	go sessionServer(ctx, &wg, cnf, cp)
 
 	/* Start the bot */
 	wg.Add(1)

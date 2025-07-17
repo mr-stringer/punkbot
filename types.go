@@ -18,6 +18,7 @@ const ApiUrl string = "https://bsky.social/xrpc"
 const CreateSessionEndpoint string = "com.atproto.server.createSession"
 const CreatePostEndpoint string = "com.atproto.repo.createRecord"
 const RefreshEndpoint string = "com.atproto.server.refreshSession"
+const DidLookUpEndpoint string = "https://plc.directory"
 const WebsocketTimeout int = 5
 const ByteWorker int = 4
 const TokenRefreshAttempts = 5
@@ -129,5 +130,5 @@ type TokenServer struct {
 type ChanPkg struct {
 	ByteSlice  chan []byte
 	ReqDidResp chan bool
-	DIDResp    chan DIDResponse
+	Session    chan DIDResponse
 }
