@@ -128,7 +128,8 @@ type TokenServer struct {
 }
 
 type ChanPkg struct {
-	ByteSlice  chan []byte
-	ReqDidResp chan bool
-	Session    chan DIDResponse
+	ByteSlice      chan []byte
+	ReqDidResp     chan bool
+	Session        chan DIDResponse
+	JetStreamError chan error
 }
