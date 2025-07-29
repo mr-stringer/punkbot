@@ -12,22 +12,6 @@ import (
 	"time"
 )
 
-// The purpose of PreFlightCheck is to ensure a JwtToken can be retrieved from
-// the API, if not, we quit.
-func PreFlightCheck(cnf *Config) error {
-	slog.Info("Starting the postoffice")
-	slog.Info("Get token")
-	/*Getting a token checks we can authenticate, this saves us from waiting for
-	a period for a hashtag and failing later*/
-	d, err := getToken(cnf)
-	if err != nil {
-		slog.Error("Failed to get token")
-		return err
-	}
-	slog.Info("Got token", "token", d.AccessJwt)
-	return nil
-}
-
 func sessionServer(ctx context.Context, wg *sync.WaitGroup, cnf *Config, cp ChanPkg) {
 	defer wg.Done()
 

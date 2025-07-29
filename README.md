@@ -22,24 +22,14 @@ the future.
 
 ## Getting punkbot
 
-Punkbot now supports binaries for Linux and MacOS for both AMD64 and ARM64
-architectures. Binaries can be downloaded from
-[releases](https://github.com/mr-stringer/punkbot/releases). If you require a
-binary for another platform you can raise a an issue or compile it yourself.
+The best way to run punkbot is with Docker. For other methods of running
+punkbot, [click here](docs/running.md)
 
-## How to compile
-
-To compile you'll need a working go environment (check go.mod for the correct
-version) and automake. You can run (the admittedly sparse) tests with:
+The punkbot docker image supports amd64 and arm64 architectures. You can pull
+the image with:
 
 ```shell
-make test
-```
-
-Building the binary can be done with:
-
-```shell
-make
+docker pull mrstringer/punkbot
 ```
 
 ## Running punkbot
@@ -49,7 +39,7 @@ In order to run `punkbot`, you'll need:
 * A Bluesky account
 * An app password for your bluesky account
 * A completed configuration file
-* To export your app password to the environment
+
 
 ### Create a Bluesky account
 
@@ -110,7 +100,7 @@ The terms part is a simple a list of strings that the bot should search posts
 for. This may be hashtags but can be any string. Don't worry about case, the
 term text and post text are both converted to lowercase for comparison.
 
- **Be cafeful**, using terms that are too common will likely cause you problems.
+ **Be careful**, using terms that are too common will likely cause you problems.
 Ensure you read [BlueSky's rate limit
 policy](https://docs.bsky.app/docs/advanced-guides/rate-limits). Don't become a
 spammer!
@@ -138,7 +128,7 @@ configuration, so punkbot will connect to a public instance.
 
 A JSON version of the same configuration can be found [here](docs/botcnf.json)
 
-### Export the app password
+### Running punkbot in docker
 
 Punkbot requires the app password or order to re-post and like content as the
 desired user. The password must be exported to the shell using the variable
