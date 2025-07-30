@@ -16,6 +16,7 @@ import (
 
 func bpWebsocket(ctx context.Context, cp ChanPkg, wg *sync.WaitGroup, url string) {
 	defer wg.Done()
+
 	slog.Info("bpWebsocket started")
 	/* The bot is the oly thing that needs to be cleaned up therefore the bot */
 	/* listens for SIGINT and SIGTERM, it then requests all go routines to    */
@@ -36,6 +37,7 @@ func bpWebsocket(ctx context.Context, cp ChanPkg, wg *sync.WaitGroup, url string
 			if err != nil {
 				slog.Error("Error connecting to websocket", "err", err.Error())
 				time.Sleep(time.Duration(WebsocketTimeout) * time.Second)
+				cp.JetStreamError <- err //inform of error
 				continue
 			}
 			wg.Add(1)
@@ -58,6 +60,7 @@ func handleWebsocket(ctx context.Context, wg *sync.WaitGroup, conn *websocket.Co
 			if err != nil {
 				/* Only print a warning if context IS NOT cancelled */
 				slog.Warn("Failed to read message from socket", "error", err)
+				cp.JetStreamError <- err
 			}
 			cp.ByteSlice <- message
 
@@ -114,7 +117,8 @@ func handleBytes(ctx context.Context, cnf *Config, wg *sync.WaitGroup, id int, c
 			err := json.Unmarshal(ba, &msg)
 			if err != nil {
 				slog.Error("Couldn't unmarshal message", "error", err.Error())
-				return
+				cp.JetStreamError <- err
+				continue
 			}
 			err = handleMessage(cnf, id, &msg, cp)
 			if err != nil {
