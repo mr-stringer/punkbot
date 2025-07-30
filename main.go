@@ -7,6 +7,7 @@ import (
 	"os/signal"
 	"sync"
 	"syscall"
+	"time"
 )
 
 func main() {
@@ -79,14 +80,20 @@ func main() {
 
 	go func() {
 		var jetstreamErrors int = 0
-		var err error
 		for {
-			err = <-cp.JetStreamError //block until error
-			jetstreamErrors++
-			slog.Error("Jetstream Error", "err", err.Error())
-			if jetstreamErrors >= 10 {
-				cancel()
-				return
+			select {
+			case err := <-cp.JetStreamError: //block until error
+				jetstreamErrors++
+				slog.Error("Jetstream Error", "err", err.Error())
+				if jetstreamErrors >= 10 {
+					cancel()
+					return
+				}
+			case <-time.After(10 * time.Minute):
+				if jetstreamErrors > 0 {
+					slog.Error("Decrementing Jetstream error count", "current", jetstreamErrors, "new", jetstreamErrors-1)
+					jetstreamErrors--
+				}
 			}
 		}
 	}()
