@@ -28,8 +28,14 @@ func getToken(cnf *Config) (*DIDResponse, error) {
 	}
 	defer resp.Body.Close()
 
+	slog.Info("Session server", "HTTP", resp.StatusCode)
+	for k, v := range resp.Header {
+		slog.Info("sessionServer: Header", k, v)
+	}
+
 	if resp.StatusCode != http.StatusOK {
 		slog.Error("Unexpected status code returned", "code", resp.StatusCode)
+
 		return nil, fmt.Errorf("unexpected status code: %d", resp.StatusCode)
 	}
 

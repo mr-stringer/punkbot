@@ -7,6 +7,7 @@ import (
 	"os/signal"
 	"sync"
 	"syscall"
+	"time"
 )
 
 func main() {
@@ -56,9 +57,10 @@ func main() {
 
 	/* initialise the channel package */
 	cp := ChanPkg{
-		ByteSlice:  make(chan []byte, ByteSliceBufferSize),
-		ReqDidResp: make(chan bool),
-		Session:    make(chan DIDResponse),
+		ByteSlice:      make(chan []byte, ByteSliceBufferSize),
+		ReqDidResp:     make(chan bool),
+		Session:        make(chan DIDResponse),
+		JetStreamError: make(chan error),
 	}
 
 	/* Each go routine in increment the wait group */
@@ -75,6 +77,26 @@ func main() {
 	if err != nil {
 		os.Exit(ExitBotFailure)
 	}
+
+	go func() {
+		var jetstreamErrors int = 0
+		for {
+			select {
+			case err := <-cp.JetStreamError: //block until error
+				jetstreamErrors++
+				slog.Error("Jetstream Error", "err", err.Error())
+				if jetstreamErrors >= 10 {
+					cancel()
+					return
+				}
+			case <-time.After(10 * time.Minute):
+				if jetstreamErrors > 0 {
+					slog.Error("Decrementing Jetstream error count", "current", jetstreamErrors, "new", jetstreamErrors-1)
+					jetstreamErrors--
+				}
+			}
+		}
+	}()
 
 	wg.Wait()
 
