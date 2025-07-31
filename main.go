@@ -32,8 +32,6 @@ func main() {
 		os.Exit(ExitConfigFailure)
 	}
 
-	slog.Info(cnf.GetSecret())
-
 	/* Create the master context                                              */
 	/* This context will handle all cancelling of the bot and the DID server  */
 	/* Go routines created by these functions will inherit the context and    */
