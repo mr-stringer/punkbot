@@ -28,9 +28,9 @@ func getToken(cnf *Config) (*DIDResponse, error) {
 	}
 	defer resp.Body.Close()
 
-	slog.Info("Session server", "HTTP", resp.StatusCode)
+	slog.Debug("Session server", "HTTP", resp.StatusCode)
 	for k, v := range resp.Header {
-		slog.Info("sessionServer: Header", k, v)
+		slog.Debug("sessionServer: Header", k, v)
 	}
 
 	if resp.StatusCode != http.StatusOK {

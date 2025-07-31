@@ -31,7 +31,7 @@ func sessionServer(ctx context.Context, wg *sync.WaitGroup, cnf *Config, cp Chan
 		slog.Debug("sessionServer, in the loop", "AccessTokenHash", StrHash(d.AccessJwt))
 		select {
 		case <-cp.ReqDidResp:
-			slog.Info("Request for session", "AccessTokenHash", StrHash(d.AccessJwt))
+			slog.Debug("Request for session", "AccessTokenHash", StrHash(d.AccessJwt))
 			// dereference to send copy of DID Response
 			cp.Session <- *d
 		case <-ticker.C:
