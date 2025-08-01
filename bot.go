@@ -116,7 +116,7 @@ func handleBytes(ctx context.Context, cnf *Config, wg *sync.WaitGroup, id int, c
 			var msg Message
 			err := json.Unmarshal(ba, &msg)
 			if err != nil {
-				slog.Error("Couldn't unmarshal message", "error", err.Error())
+				slog.Error("handleBytes: Couldn't unmarshal message", "WorkerId", id, "error", err.Error())
 				cp.JetStreamError <- err
 				continue
 			}

@@ -3,13 +3,14 @@ package main
 import "log/slog"
 
 const (
-	ExitCmdLineArgsFailure = iota
+	ExitCmdLineArgsFailure = iota //1
 	ExitConfigFailure
 	ExitNoPasswordSet
 	ExitJetStreamFailure
 	ExitPostOfficeFailure
 	ExitBotFailure
 	ExitGetToken
+	ExitWebSocketFailure
 )
 
 const ServerArgsPre string = "wss://"
