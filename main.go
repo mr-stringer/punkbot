@@ -84,8 +84,12 @@ func main() {
 				jetstreamErrors++
 				slog.Error("Jetstream Error", "err", err.Error())
 				if jetstreamErrors >= 10 {
+					slog.Error("Jetstream Error count too high, attempting shutdown")
 					cancel()
-					return
+					/* Sometime, a clean shutdown doesn't work. If the we're. */
+					/* if it takes longer than 60 seconds, go nuclear.        */
+					time.Sleep(time.Second * 10)
+					os.Exit(ExitWebSocketFailure)
 				}
 			case <-time.After(10 * time.Minute):
 				if jetstreamErrors > 0 {
