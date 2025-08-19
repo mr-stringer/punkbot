@@ -1,4 +1,4 @@
-FROM golang:1.24.4-bookworm
+FROM golang:1.25.0-bookworm
 
 ARG USER='engineer'
 ARG UID=5000
