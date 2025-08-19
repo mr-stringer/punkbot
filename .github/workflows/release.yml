@@ -74,4 +74,4 @@ jobs:
             docker image pull mrstringer/punkbot:latest
             docker container stop punkbot
             docker container rm punkbot
-            docker container run -d --name punkbot -v /home/sstringer/ptest/botcnf.yml:/app/botcnf.yml -e PUNKBOT_PASSWORD='${{ secrets.PUNKBOT_BSKY_APP_PASSWORD }}' mrstringer/punkbot
+            docker container run -d --name punkbot --restart=unless-stopped -v /home/sstringer/ptest/botcnf.yml:/app/botcnf.yml -e PUNKBOT_PASSWORD='${{ secrets.PUNKBOT_BSKY_APP_PASSWORD }}' mrstringer/punkbot
