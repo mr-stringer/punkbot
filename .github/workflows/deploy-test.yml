@@ -10,7 +10,7 @@ jobs:
   build:
     name: Build, push and run docker image
     runs-on: ubuntu-latest
-  
+
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -30,6 +30,7 @@ jobs:
       - name: Build and push
         uses: docker/build-push-action@v6
         with:
+          context: .
           platforms: linux/amd64,linux/arm64
           push: true
           tags: mrstringer/punkbottest:latest

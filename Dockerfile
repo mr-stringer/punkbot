@@ -1,6 +1,6 @@
 # syntax=docker/dockerfile:1
 
-FROM golang:1.24.4-bookworm AS builder
+FROM golang:1.25.0-bookworm AS builder
 
 # Set destination for COPY
 WORKDIR /app/punkbot
@@ -11,6 +11,9 @@ ENV CGO_ENABLED=0
 # Copy the source code. Note the slash at the end, as explained in
 # https://docs.docker.com/engine/reference/builder/#copy
 COPY . ./
+
+# Ensure git data is also copied
+COPY .git ./
 
 # Download Go modules
 RUN go mod download
