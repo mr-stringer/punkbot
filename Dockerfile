@@ -12,6 +12,9 @@ ENV CGO_ENABLED=0
 # https://docs.docker.com/engine/reference/builder/#copy
 COPY . ./
 
+# Ensure git data is also copied
+COPY .git ./
+
 # Download Go modules
 RUN go mod download
 
@@ -21,11 +24,3 @@ RUN make
 # Get certs from alpine
 FROM alpine:latest AS certs
 RUN apk --update add ca-certificates
-
-# Final State
-FROM scratch
-WORKDIR /app
-COPY --from=certs /etc/ssl/certs/ca-certificates.crt /etc/ssl/certs/ca-certificates.crt
-COPY --from=builder /app/punkbot/punkbot /app/punkbot
-
-ENTRYPOINT ["/app/punkbot"]
