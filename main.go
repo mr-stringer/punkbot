@@ -18,12 +18,15 @@ func main() {
 		os.Exit(ExitCmdLineArgsFailure)
 	}
 
-	//configure the logger
+	/* configure the logger */
 	err = loggerConfig(cl)
 	if err != nil {
 		slog.Error("Failed to configure the logger", "err", err.Error())
 		os.Exit(ExitConfigFailure)
 	}
+
+	/* Log current version */
+	slog.Info("Version information", "Version", ReleaseVersion, "BuildTime", BuildTime)
 
 	/*Source config*/
 	cnf, err := GetConfig(cl.ConfigFilePath)
