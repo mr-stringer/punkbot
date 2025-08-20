@@ -24,3 +24,11 @@ RUN make
 # Get certs from alpine
 FROM alpine:latest AS certs
 RUN apk --update add ca-certificates
+
+# Final State
+FROM scratch
+WORKDIR /app
+COPY --from=certs /etc/ssl/certs/ca-certificates.crt /etc/ssl/certs/ca-certificates.crt
+COPY --from=builder /app/punkbot/punkbot /app/punkbot
+
+ENTRYPOINT ["/app/punkbot"]
