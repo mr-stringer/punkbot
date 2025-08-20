@@ -1,4 +1,4 @@
-LDFLAGS += -X 'main.ReleaseVersion=$(shell git describe --tag --abbrev=0 || echo "Development")'
+LDFLAGS += -X 'main.ReleaseVersion=$(shell git describe --tag --exact-match --abbrev=0 || echo "Development")'
 LDFLAGS += -X 'main.BuildTime=$(shell date +'%d-%m-%Y_%H:%M:%S')'
 
 .PHONY: all
