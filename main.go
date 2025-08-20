@@ -26,7 +26,7 @@ func main() {
 	}
 
 	/* Log current version */
-	slog.Info("Version information", "Version", ReleaseVersion, "Build Time", BuildTime)
+	slog.Info("Version information", "Version", ReleaseVersion, "BuildTime", BuildTime)
 
 	/*Source config*/
 	cnf, err := GetConfig(cl.ConfigFilePath)
