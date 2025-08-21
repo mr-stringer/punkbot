@@ -17,7 +17,7 @@ import (
 func bpWebsocket(ctx context.Context, cp ChanPkg, wg *sync.WaitGroup, url string) {
 	defer wg.Done()
 
-	slog.Info("bpWebsocket started")
+	slog.Info("Started")
 	/* The bot is the oly thing that needs to be cleaned up therefore the bot */
 	/* listens for SIGINT and SIGTERM, it then requests all go routines to    */
 	/* stop*/
@@ -29,7 +29,7 @@ func bpWebsocket(ctx context.Context, cp ChanPkg, wg *sync.WaitGroup, url string
 		select {
 		case <-ctx.Done():
 			/* Allow time for workers to stop */
-			slog.Info("bpWebsocket shutting down")
+			slog.Info("Shutting down")
 			return
 		default:
 			slog.Info("Attempting websocket connection")
@@ -52,7 +52,7 @@ func handleWebsocket(ctx context.Context, wg *sync.WaitGroup, conn *websocket.Co
 	defer wg.Done()
 	defer conn.Close()
 
-	slog.Info("handleWebsocket started")
+	slog.Info("Started")
 
 	go func() {
 		for {
@@ -70,7 +70,7 @@ func handleWebsocket(ctx context.Context, wg *sync.WaitGroup, conn *websocket.Co
 	<-ctx.Done()
 	/* Allow time for websocket to close cleanly */
 	time.Sleep(time.Millisecond * 500)
-	slog.Warn("handleWebsocket shutting down")
+	slog.Warn("Shutting down")
 }
 
 func connectWebsocket(url string) (*websocket.Conn, error) {
@@ -86,14 +86,14 @@ func Start(ctx context.Context, wg *sync.WaitGroup, cnf *Config, cp ChanPkg) err
 
 	var workers int = ByteWorker
 
-	slog.Debug("Starting byte handlers")
+	slog.Debug("Starting")
 	for i := 0; i < workers; i++ {
 		wg.Add(1)
 		go handleBytes(ctx, cnf, wg, i, cp)
 	}
 
 	stream := fmt.Sprintf("%s%s%s", ServerArgsPre, cnf.JetStreamServer, ServerArgsPost)
-	slog.Debug("Starting the websocket listener")
+	slog.Debug("Starting bpWebsocket")
 	wg.Add(1)
 	go bpWebsocket(ctx, cp, wg, stream)
 
@@ -108,7 +108,7 @@ func Start(ctx context.Context, wg *sync.WaitGroup, cnf *Config, cp ChanPkg) err
 
 func handleBytes(ctx context.Context, cnf *Config, wg *sync.WaitGroup, id int, cp ChanPkg) {
 	defer wg.Done()
-	slog.Info("handleBytes worker starting", "WorkerId", id)
+	slog.Info("Starting", "WorkerId", id)
 	for {
 		select {
 		case ba := <-cp.ByteSlice:
@@ -116,7 +116,7 @@ func handleBytes(ctx context.Context, cnf *Config, wg *sync.WaitGroup, id int, c
 			var msg Message
 			err := json.Unmarshal(ba, &msg)
 			if err != nil {
-				slog.Error("handleBytes: Couldn't unmarshal message", "WorkerId", id, "error", err.Error())
+				slog.Error("Couldn't unmarshal message", "WorkerId", id, "error", err.Error())
 				cp.JetStreamError <- err
 				continue
 			}
@@ -153,10 +153,9 @@ func handleMessage(cnf *Config, id int, msg *Message, cp ChanPkg) error {
 				slog.Info("Match info", "post", msg.Commit.Record.Text)
 			}
 		}
-		//TODO new post office logic user client/server model
 		err = Ral(cnf, msg, cp)
 		if err != nil {
-			slog.Error("Repost failed", "err", err.Error())
+			slog.Error("Repost and like failed", "err", err.Error())
 		}
 	}
 

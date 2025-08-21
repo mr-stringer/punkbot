@@ -5,6 +5,7 @@ import (
 	"log/slog"
 	"os"
 	"os/signal"
+	"strings"
 	"sync"
 	"syscall"
 	"time"
@@ -51,7 +52,7 @@ func main() {
 		sig := make(chan os.Signal, 1)
 		signal.Notify(sig, syscall.SIGINT, syscall.SIGTERM)
 		esig := <-sig
-		slog.Warn("received shutdown signal", "value", esig)
+		slog.Warn("Received shutdown signal", "value", esig)
 		slog.Warn("Shutdown started")
 		cancel()
 	}()
@@ -104,7 +105,6 @@ func main() {
 	}()
 
 	wg.Wait()
-
 	slog.Info("Shutdown complete")
 
 }
@@ -124,7 +124,26 @@ func loggerConfig(cl *ClArgs) error {
 	}
 
 	ho := slog.HandlerOptions{
-		Level: cl.LogLevel,
+		Level:     cl.LogLevel,
+		AddSource: true,
+		ReplaceAttr: func(groups []string, a slog.Attr) slog.Attr {
+			if a.Key == slog.SourceKey {
+				// Get the source information
+				source, ok := a.Value.Any().(*slog.Source)
+				if !ok {
+					return a
+				}
+
+				// Extract function name from the source
+				fullFunc := source.Function
+				// Split and get the last part of the function name
+				funcName := fullFunc[strings.LastIndexByte(fullFunc, '.')+1:]
+
+				// Return a new attribute with just the function name
+				return slog.Attr{Key: "function", Value: slog.StringValue(funcName)}
+			}
+			return a
+		},
 	}
 
 	if cl.JsonLog { /*If logging to JSON, log to JSON*/
