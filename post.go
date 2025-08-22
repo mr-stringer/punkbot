@@ -15,7 +15,7 @@ import (
 func sessionServer(ctx context.Context, wg *sync.WaitGroup, cnf *Config, cp ChanPkg) {
 	defer wg.Done()
 
-	slog.Info("Starting the SessionServer")
+	slog.Info("Starting")
 	slog.Info("Creating Session")
 	d, err := getToken(cnf)
 	if err != nil {
@@ -28,7 +28,7 @@ func sessionServer(ctx context.Context, wg *sync.WaitGroup, cnf *Config, cp Chan
 	ticker := time.NewTicker(time.Second * 60)
 
 	for {
-		slog.Debug("sessionServer, in the loop", "AccessTokenHash", StrHash(d.AccessJwt))
+		slog.Debug("In the loop", "AccessTokenHash", StrHash(d.AccessJwt))
 		select {
 		case <-cp.ReqDidResp:
 			slog.Debug("Request for session", "AccessTokenHash", StrHash(d.AccessJwt))
@@ -52,7 +52,7 @@ func sessionServer(ctx context.Context, wg *sync.WaitGroup, cnf *Config, cp Chan
 			}
 		case <-ctx.Done():
 			/* No need to decrement the wait groups, it's already deferred    */
-			slog.Info("SessionServer shutting down")
+			slog.Info("Shutting down")
 			return
 		}
 	}
