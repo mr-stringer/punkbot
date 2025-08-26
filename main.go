@@ -43,8 +43,8 @@ func main() {
 
 	ctx, cancel := context.WithCancel(context.Background())
 
-	/* This anonymous function will trigger the ctx's cancel function in the. */
-	/* a instruct all active routines to close a soon as possible.            */
+	/* This anonymous function will trigger the ctx's cancel function         */
+	/* this instructs all active routines to close a soon as possible.        */
 	/* Any committed work (such as token refreshes, likes and reposts, should */
 	/* be finished.                                                           */
 	go func() {
@@ -75,7 +75,7 @@ func main() {
 	/* Start the bot */
 	wg.Add(1)
 	slog.Info("Starting the bot")
-	err = Start(ctx, &wg, cnf, cp)
+	err = bot(ctx, &wg, cnf, cp)
 	if err != nil {
 		os.Exit(ExitBotFailure)
 	}
@@ -93,6 +93,7 @@ func main() {
 					/* Sometime, a clean shutdown doesn't work. If the we're. */
 					/* if it takes longer than 60 seconds, go nuclear.        */
 					time.Sleep(time.Second * 10)
+					slog.Error("Not all functions shutdown cleanly, forcing shutdown")
 					os.Exit(ExitWebSocketFailure)
 				}
 			case <-time.After(10 * time.Minute):

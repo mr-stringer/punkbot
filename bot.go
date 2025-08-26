@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"log/slog"
 	"net/http"
+	"os"
 	"strings"
 	"sync"
 	"time"
@@ -14,16 +15,13 @@ import (
 	"github.com/gorilla/websocket"
 )
 
-func bpWebsocket(ctx context.Context, cp ChanPkg, wg *sync.WaitGroup, url string) {
+func bpWebsocket(ctx context.Context, cp ChanPkg, wg *sync.WaitGroup, cnf *Config) {
 	defer wg.Done()
 
 	slog.Info("Started")
-	/* The bot is the oly thing that needs to be cleaned up therefore the bot */
-	/* listens for SIGINT and SIGTERM, it then requests all go routines to    */
-	/* stop*/
-
 	var conn *websocket.Conn
 	var err error
+	//var jetStreamConnectionAttempts = 0
 	// loop forever!
 	for {
 		select {
@@ -33,7 +31,23 @@ func bpWebsocket(ctx context.Context, cp ChanPkg, wg *sync.WaitGroup, url string
 			return
 		default:
 			slog.Info("Attempting websocket connection")
-			conn, err = connectWebsocket(url)
+			if cnf.autoJetStream {
+				err = cnf.FindFastestServer(MeasureLatency)
+				if err != nil {
+					slog.Error("Cannot connect to JetStream Server")
+					os.Exit(ExitJetStreamFailure)
+				}
+				slog.Info("Connecting to:", "server", getUrl(cnf.JetStreamServer))
+				conn, err = connectWebsocket(getUrl(cnf.JetStreamServer))
+			} else {
+				conn, err = connectWebsocket(getUrl(cnf.JetStreamServer))
+				if err != nil {
+					slog.Error("Cannot connect to JetStream Server")
+					os.Exit(ExitJetStreamFailure)
+				}
+			}
+
+			//
 			if err != nil {
 				slog.Error("Error connecting to websocket", "err", err.Error())
 				time.Sleep(time.Duration(WebsocketTimeout) * time.Second)
@@ -55,22 +69,23 @@ func handleWebsocket(ctx context.Context, wg *sync.WaitGroup, conn *websocket.Co
 	slog.Info("Started")
 
 	go func() {
-		for {
+		select {
+		case <-ctx.Done():
+			slog.Info("Shutting down")
+		default:
 			_, message, err := conn.ReadMessage()
 			if err != nil {
 				/* Only print a warning if context IS NOT cancelled */
 				slog.Warn("Failed to read message from socket", "error", err)
 				cp.JetStreamError <- err
+				// disconnect
+				return
+
 			}
 			cp.ByteSlice <- message
 
 		}
 	}()
-
-	<-ctx.Done()
-	/* Allow time for websocket to close cleanly */
-	time.Sleep(time.Millisecond * 500)
-	slog.Warn("Shutting down")
 }
 
 func connectWebsocket(url string) (*websocket.Conn, error) {
@@ -81,7 +96,7 @@ func connectWebsocket(url string) (*websocket.Conn, error) {
 	return c, nil
 }
 
-func Start(ctx context.Context, wg *sync.WaitGroup, cnf *Config, cp ChanPkg) error {
+func bot(ctx context.Context, wg *sync.WaitGroup, cnf *Config, cp ChanPkg) error {
 	defer wg.Done()
 
 	var workers int = ByteWorker
@@ -92,10 +107,10 @@ func Start(ctx context.Context, wg *sync.WaitGroup, cnf *Config, cp ChanPkg) err
 		go handleBytes(ctx, cnf, wg, i, cp)
 	}
 
-	stream := fmt.Sprintf("%s%s%s", ServerArgsPre, cnf.JetStreamServer, ServerArgsPost)
+	//stream := fmt.Sprintf("%s%s%s", ServerArgsPre, cnf.JetStreamServer, ServerArgsPost)
 	slog.Debug("Starting bpWebsocket")
 	wg.Add(1)
-	go bpWebsocket(ctx, cp, wg, stream)
+	go bpWebsocket(ctx, cp, wg, cnf)
 
 	// Only report buffer status during debug
 	if LogLevel == slog.LevelDebug {
@@ -104,6 +119,10 @@ func Start(ctx context.Context, wg *sync.WaitGroup, cnf *Config, cp ChanPkg) err
 
 	slog.Info("Bot startup complete")
 	return nil
+}
+
+func getUrl(jetStreamServer string) string {
+	return fmt.Sprintf("%s%s%s", ServerArgsPre, jetStreamServer, ServerArgsPost)
 }
 
 func handleBytes(ctx context.Context, cnf *Config, wg *sync.WaitGroup, id int, cp ChanPkg) {
@@ -126,7 +145,7 @@ func handleBytes(ctx context.Context, cnf *Config, wg *sync.WaitGroup, id int, c
 				//A single message failure does not require us to quit
 			}
 		case <-ctx.Done():
-			slog.Info("handleBytes worker shutting down", "WorkerId", id)
+			slog.Info("Shutting down", "WorkerId", id)
 			return
 		}
 	}

@@ -49,8 +49,16 @@ type Config struct {
 	//Also add the ability to auto select public instance automatically based on
 	//latency
 	JetStreamServer string
+	autoJetStream   bool   // CustomJet
 	password        string //unexported
+}
 
+func (c *Config) setAutoJetStream() {
+	c.autoJetStream = true
+}
+
+func (c *Config) getAutoJetStream() bool {
+	return c.autoJetStream
 }
 
 type Commit struct {

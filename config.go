@@ -3,7 +3,6 @@ package main
 import (
 	"fmt"
 	"log/slog"
-	"os"
 
 	"github.com/spf13/viper"
 )
@@ -53,12 +52,9 @@ func GetConfig(path string) (*Config, error) {
 
 	/*If no JetSteam configured, find the public server with the lowest latency*/
 	if cnf.JetStreamServer == "" {
-		slog.Info("No JetStream server provided. Finding public server with lowest latency")
-		err = cnf.FindFastestServer(MeasureLatency)
-		if err != nil {
-			slog.Error("No usable server found, cannot continue")
-			os.Exit(ExitJetStreamFailure)
-		}
+		cnf.setAutoJetStream()
+		slog.Info("No JetStream server provided. Will find public server with lowest latency")
+
 	}
 	return &cnf, nil
 }
