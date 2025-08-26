@@ -8,7 +8,6 @@ import (
 	"strings"
 	"sync"
 	"syscall"
-	"time"
 )
 
 func main() {
@@ -43,8 +42,8 @@ func main() {
 
 	ctx, cancel := context.WithCancel(context.Background())
 
-	/* This anonymous function will trigger the ctx's cancel function in the. */
-	/* a instruct all active routines to close a soon as possible.            */
+	/* This anonymous function will trigger the ctx's cancel function         */
+	/* this instructs all active routines to close a soon as possible.        */
 	/* Any committed work (such as token refreshes, likes and reposts, should */
 	/* be finished.                                                           */
 	go func() {
@@ -62,7 +61,7 @@ func main() {
 		ByteSlice:      make(chan []byte, ByteSliceBufferSize),
 		ReqDidResp:     make(chan bool),
 		Session:        make(chan DIDResponse),
-		JetStreamError: make(chan error),
+		JetStreamError: make(chan bool),
 	}
 
 	/* Each go routine in increment the wait group */
@@ -75,33 +74,17 @@ func main() {
 	/* Start the bot */
 	wg.Add(1)
 	slog.Info("Starting the bot")
-	err = Start(ctx, &wg, cnf, cp)
+	err = bot(ctx, &wg, cnf, cp)
 	if err != nil {
 		os.Exit(ExitBotFailure)
 	}
 
 	go func() {
-		var jetstreamErrors int = 0
-		for {
-			select {
-			case err := <-cp.JetStreamError: //block until error
-				jetstreamErrors++
-				slog.Error("Jetstream Error", "err", err.Error())
-				if jetstreamErrors >= 10 {
-					slog.Error("Jetstream Error count too high, attempting shutdown")
-					cancel()
-					/* Sometime, a clean shutdown doesn't work. If the we're. */
-					/* if it takes longer than 60 seconds, go nuclear.        */
-					time.Sleep(time.Second * 10)
-					os.Exit(ExitWebSocketFailure)
-				}
-			case <-time.After(10 * time.Minute):
-				if jetstreamErrors > 0 {
-					slog.Error("Decrementing Jetstream error count", "current", jetstreamErrors, "new", jetstreamErrors-1)
-					jetstreamErrors--
-				}
-			}
-		}
+		<-cp.JetStreamError //block until signal
+		slog.Error("Jetstream Error, cannot continue")
+		slog.Warn("Shutdown started")
+		cancel()
+
 	}()
 
 	wg.Wait()

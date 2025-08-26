@@ -49,8 +49,16 @@ type Config struct {
 	//Also add the ability to auto select public instance automatically based on
 	//latency
 	JetStreamServer string
+	autoJetStream   bool   // CustomJet
 	password        string //unexported
+}
 
+func (c *Config) setAutoJetStream() {
+	c.autoJetStream = true
+}
+
+func (c *Config) getAutoJetStream() bool {
+	return c.autoJetStream
 }
 
 type Commit struct {
@@ -132,5 +140,5 @@ type ChanPkg struct {
 	ByteSlice      chan []byte
 	ReqDidResp     chan bool
 	Session        chan DIDResponse
-	JetStreamError chan error
+	JetStreamError chan bool
 }

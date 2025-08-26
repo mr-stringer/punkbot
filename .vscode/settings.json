@@ -1,14 +1,18 @@
 {
     "cSpell.words": [
         "atproto",
+        "botcnf",
         "bsky",
         "dnut",
         "echoapi",
+        "esig",
         "initialise",
         "jetstream",
         "Multibase",
         "punkbot",
         "punkbotjson",
+        "repost",
+        "reposts",
         "rkey"
     ]
 }
