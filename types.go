@@ -140,5 +140,5 @@ type ChanPkg struct {
 	ByteSlice      chan []byte
 	ReqDidResp     chan bool
 	Session        chan DIDResponse
-	JetStreamError chan error
+	JetStreamError chan bool
 }
