@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
+	"io"
 	"log/slog"
 	"net/http"
 )
@@ -35,6 +36,11 @@ func getToken(cnf *Config) (*DIDResponse, error) {
 
 	if resp.StatusCode != http.StatusOK {
 		slog.Error("Unexpected status code returned", "code", resp.StatusCode)
+		body, err := io.ReadAll(resp.Body)
+		if err != nil {
+			slog.Warn("Unable to read response body")
+		}
+		slog.Warn("Response body", "content", string(body))
 
 		return nil, fmt.Errorf("unexpected status code: %d", resp.StatusCode)
 	}

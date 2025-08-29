@@ -22,7 +22,8 @@ func launchWebsocket(ctx context.Context, cp ChanPkg, wg *sync.WaitGroup, cnf *C
 	var conn *websocket.Conn
 	var err error
 
-	boff := newBackoff(1, 20, 2, 10)
+	boff := newBackoff(1, 300, 2, 10)
+	ec := make(chan error)
 
 	for {
 		select {
@@ -49,17 +50,24 @@ func launchWebsocket(ctx context.Context, cp ChanPkg, wg *sync.WaitGroup, cnf *C
 			/* if it's not possible to connect, backoff and loop */
 			if err != nil {
 				slog.Warn("Could not connect to websocket", "server", getUrl(cnf.JetStreamServer))
-				err := boff.Backoff()
-				if err != nil && err.Error() == "RetryCountBreeched" {
-					slog.Error("Jetstream connection retry count breached")
-					cp.JetStreamError <- true
+				go boff.Backoff(ec)
+				// allow context.Done() to interrupt backoff
+				select {
+				case err := <-ec:
+					if err != nil && err.Error() == "RetryCountBreeched" {
+						slog.Error("Jetstream connection retry count breached")
+						cp.JetStreamError <- true
+						return
+					}
+				case <-ctx.Done():
+					slog.Info("Shutting down")
 					return
-
 				}
 				continue
-
 			}
 
+			/* Reset Backoff*/
+			boff.Reset()
 			wg.Add(1)
 			handleWebsocket(ctx, wg, conn, cp)
 

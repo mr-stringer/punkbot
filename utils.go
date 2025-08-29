@@ -35,18 +35,18 @@ func newBackoff(initial time.Duration, maxInterval time.Duration, multiplier flo
 		multiplier,
 		maxRetries,
 		0,
-		4,
+		10,
 	}
 }
 
-func (b *backoff) Backoff() error {
+func (b *backoff) Backoff(ec chan<- error) {
 	/* error if max retries already breached */
 	if b.currentRetry >= b.maxRetries {
-		return fmt.Errorf("RetryCountBreeched")
+		ec <- fmt.Errorf("RetryCountBreeched")
 	}
 
-	/* add 25% jitter to the current interval to avoid stampeding herd */
-	jitter := b.current / 4
+	/* add 10% jitter to the current interval to avoid stampeding herd */
+	jitter := b.current / 10
 	wait := b.current + time.Duration(rand.Float64()*float64(jitter))
 	/* sleep for the current interval */
 	slog.Info("Waiting", "time", wait, "attempt", b.currentRetry+1, "of", b.maxRetries)
@@ -62,9 +62,8 @@ func (b *backoff) Backoff() error {
 		slog.Info("Next calculated backoff interval is greater than max interval, reverting to max interval")
 		b.current = b.maxInterval
 	}
-	slog.Info("Next backup interval calculated", "interval", b.current.Seconds())
 
-	return nil
+	ec <- nil
 }
 
 func (b *backoff) Reset() {
