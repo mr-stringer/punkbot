@@ -9,7 +9,6 @@ import (
 	"os"
 	"strings"
 	"sync"
-	"time"
 	"unicode"
 
 	"github.com/gorilla/websocket"
@@ -124,11 +123,6 @@ func bot(ctx context.Context, wg *sync.WaitGroup, cnf *Config, cp ChanPkg) error
 	slog.Debug("Starting bpWebsocket")
 	wg.Add(1)
 	go launchWebsocket(ctx, cp, wg, cnf)
-
-	// Only report buffer status during debug
-	if LogLevel == slog.LevelDebug {
-		go reportBsChanBuf(cp)
-	}
 
 	slog.Info("Bot startup complete")
 	return nil
@@ -249,21 +243,6 @@ func checkForTerms(cnf *Config, msg *Message) bool {
 		}
 	}
 	return false
-}
-
-func reportBsChanBuf(cp ChanPkg) {
-	// Run forever just spitting out the current byte slice buffer every minute
-	tick := time.NewTicker(time.Second * 60)
-	defer tick.Stop()
-	timeout := time.Second * 70
-	for {
-		select {
-		case <-tick.C:
-			slog.Debug("ByteSlice channel stats", "BufferSize", "10", "ItemsInBuffer", len(cp.ByteSlice))
-		case <-time.After(timeout):
-			slog.Warn("ByteSlice channel stats", "msg", "Failed To Read in time")
-		}
-	}
 }
 
 func resolveDID(did string) (*DIDDoc, error) {
