@@ -9,17 +9,14 @@ import (
 	"net/http"
 )
 
-func getToken(cnf *Config) (*DIDResponse, error) {
-	requestBody, err := json.Marshal(map[string]string{
-		"identifier": cnf.Identifier,
-		"password":   cnf.GetSecret(),
-	})
+func getToken(cnf *Config, url string) (*DIDResponse, error) {
+	tc := tokenCreate{cnf.Identifier, cnf.GetSecret()}
+
+	requestBody, err := json.Marshal(tc)
 	if err != nil {
 		slog.Error("Failed to marshal request body")
 		return nil, err
 	}
-
-	url := fmt.Sprintf("%s/%s", ApiUrl, CreateSessionEndpoint)
 
 	resp, err := http.Post(url, "application/json", bytes.NewBuffer(requestBody))
 	if err != nil {
@@ -54,8 +51,7 @@ func getToken(cnf *Config) (*DIDResponse, error) {
 	return &tokenResponse, nil
 }
 
-func getRefresh(current **DIDResponse) error {
-	url := fmt.Sprintf("%s/%s", ApiUrl, RefreshEndpoint)
+func getRefresh(current **DIDResponse, url string) error {
 	req, err := http.NewRequest("POST", url, nil)
 	if err != nil {
 		slog.Error("Error creating request", "error", err)
@@ -71,9 +67,10 @@ func getRefresh(current **DIDResponse) error {
 		slog.Error("Error sending request", "error", err)
 		return err
 	}
+
 	if resp.StatusCode != http.StatusOK {
 		slog.Error("Unexpected status code", "status", resp)
-		return err
+		return fmt.Errorf("unexpected status code: %d", resp.StatusCode)
 	}
 
 	var tokenResponse DIDResponse

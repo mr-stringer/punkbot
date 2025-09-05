@@ -142,3 +142,8 @@ type ChanPkg struct {
 	Session        chan DIDResponse
 	JetStreamError chan bool
 }
+
+type tokenCreate struct {
+	Identifier string `json:"identifier"`
+	Secret     string `json:"password"`
+}
