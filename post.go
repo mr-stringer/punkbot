@@ -17,7 +17,10 @@ func sessionServer(ctx context.Context, wg *sync.WaitGroup, cnf *Config, cp Chan
 
 	slog.Info("Starting")
 	slog.Info("Creating Session")
-	d, err := getToken(cnf)
+	createUrl := fmt.Sprintf("%s/%s", ApiUrl, CreateSessionEndpoint)
+	RefreshUrl := fmt.Sprintf("%s/%s", ApiUrl, RefreshEndpoint)
+
+	d, err := getToken(cnf, createUrl)
 	if err != nil {
 		slog.Error("Failed to start session", "err", err.Error())
 		/*Don't clean up, just exit*/
@@ -37,7 +40,7 @@ func sessionServer(ctx context.Context, wg *sync.WaitGroup, cnf *Config, cp Chan
 		case <-ticker.C:
 			slog.Debug("Attempting to refresh access token")
 			for i := 0; i < TokenRefreshAttempts; i++ {
-				err = getRefresh(&d)
+				err = getRefresh(&d, RefreshUrl)
 				if err != nil {
 					slog.Warn("Failed to refresh token", "Attempt", i+1)
 				} else {
@@ -56,7 +59,6 @@ func sessionServer(ctx context.Context, wg *sync.WaitGroup, cnf *Config, cp Chan
 			return
 		}
 	}
-
 }
 
 // Ral (RePost and Like), uses the configured user to re-posts and like the

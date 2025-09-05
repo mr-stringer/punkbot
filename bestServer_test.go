@@ -65,7 +65,6 @@ func TestFindFastestServer(t *testing.T) {
 			}
 			/* if no error is wanted, also check jetstream server is as expected */
 			if !tt.wantErr {
-				fmt.Println(tt.fields.JetStreamServer)
 				if tt.wantServer != c.JetStreamServer {
 					t.Errorf("Config.FindFastestServer() expected jetstream server to nbe %s, but found %s", tt.wantServer, c.JetStreamServer)
 				}
