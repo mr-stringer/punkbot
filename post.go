@@ -44,8 +44,8 @@ func sessionServer(tm TokenManagerInt, ctx context.Context, wg *sync.WaitGroup, 
 		case <-ticker.C:
 			slog.Debug("Attempting to refresh access token")
 			err = tm.getRefresh(&d, RefreshUrl)
-			slog.Error("Refreshing token failed")
 			if err != nil {
+				slog.Error("Refreshing token failed")
 				/*right now on error, the code quits, that's OK docker can    */
 				/* restart it, but I might come back and improve later.       */
 				cp.Exit <- ExitRefreshToken
