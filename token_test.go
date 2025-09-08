@@ -46,7 +46,7 @@ var goodJson string = `{` +
 	`"active": true` +
 	`}`
 
-func Test_getToken(t *testing.T) {
+func TestTokenManager_getToken(t *testing.T) {
 	goodCnf := Config{
 		Identifier: "goodTest",
 		password:   "blah-blah-blah-blah",
@@ -89,36 +89,41 @@ func Test_getToken(t *testing.T) {
 	}))
 	defer tstSrv.Close()
 
-	type args struct {
-		cnf *Config
-		url string
-	}
 	tests := []struct {
-		name    string
-		args    args
+		name string // description of this test case
+		// Named input parameters for target function.
+		cnf     *Config
+		url     string
 		want    *DIDResponse
 		wantErr bool
 	}{
-		{"Good01", args{&goodCnf, tstSrv.URL}, &goodReturn, false},
-		{"InternalServerError", args{&badCnf, tstSrv.URL}, nil, true},
-		{"NotJsonError", args{&notJsonCnf, tstSrv.URL}, nil, true},
+		{"Good01", &goodCnf, tstSrv.URL, &goodReturn, false},
+		{"InternalServerError", &badCnf, tstSrv.URL, nil, true},
+		{"NotJsonError", &notJsonCnf, tstSrv.URL, nil, true},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got, err := getToken(tt.args.cnf, tt.args.url)
-			if (err != nil) != tt.wantErr {
-				t.Errorf("getToken() error = %v, wantErr %v", err, tt.wantErr)
+			// TODO: construct the receiver type.
+			var tm TokenManager
+			got, gotErr := tm.getToken(tt.cnf, tt.url)
+			if gotErr != nil {
+				if !tt.wantErr {
+					t.Errorf("getToken() failed: %v", gotErr)
+				}
 				return
+			}
+			if tt.wantErr {
+				t.Fatal("getToken() succeeded unexpectedly")
 			}
 			if !reflect.DeepEqual(got, tt.want) {
 				t.Errorf("getToken() = %v, want %v", got, tt.want)
 			}
+
 		})
 	}
 }
 
-func Test_getRefresh(t *testing.T) {
-
+func TestTokenManager_getRefresh(t *testing.T) {
 	var goodCurrentDID, badCurrentDID DIDResponse
 	goodCurrentDID.RefreshJwt = "good"
 	badCurrentDID.RefreshJwt = "bad"
@@ -142,23 +147,29 @@ func Test_getRefresh(t *testing.T) {
 
 	}))
 	defer tstSrv.Close()
-
-	type args struct {
+	tests := []struct {
+		name string // description of this test case
+		// Named input parameters for target function.
 		current **DIDResponse
 		url     string
-	}
-	tests := []struct {
-		name    string
-		args    args
 		wantErr bool
 	}{
-		{"Good01", args{&pGoodCurrentDID, tstSrv.URL}, false},
-		{"Bad01", args{&pBadCurrentDID, tstSrv.URL}, true},
+		{"Good01", &pGoodCurrentDID, tstSrv.URL, false},
+		{"Bad01", &pBadCurrentDID, tstSrv.URL, true},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			if err := getRefresh(tt.args.current, tt.args.url); (err != nil) != tt.wantErr {
-				t.Errorf("getRefresh() error = %v, wantErr %v", err, tt.wantErr)
+			// TODO: construct the receiver type.
+			var tm TokenManager
+			gotErr := tm.getRefresh(tt.current, tt.url)
+			if gotErr != nil {
+				if !tt.wantErr {
+					t.Errorf("getRefresh() failed: %v", gotErr)
+				}
+				return
+			}
+			if tt.wantErr {
+				t.Fatal("getRefresh() succeeded unexpectedly")
 			}
 		})
 	}

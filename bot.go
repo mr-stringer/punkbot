@@ -21,7 +21,7 @@ func launchWebsocket(ctx context.Context, cp ChanPkg, wg *sync.WaitGroup, cnf *C
 	var conn *websocket.Conn
 	var err error
 
-	boff := newBackoff(1, 300, 2, 10)
+	boff := newBackoff(1000, 300, 2, 10)
 	ec := make(chan error)
 
 	for {
