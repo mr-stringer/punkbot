@@ -32,7 +32,6 @@ func sessionServer(tm TokenManagerInt, ctx context.Context, wg *sync.WaitGroup, 
 	ticker := time.NewTicker(tr)
 
 	for {
-		slog.Info("In the loop")
 		slog.Debug("In the loop", "AccessTokenHash", StrHash(d.AccessJwt))
 		select {
 		case <-cp.ReqDidResp:
@@ -43,9 +42,9 @@ func sessionServer(tm TokenManagerInt, ctx context.Context, wg *sync.WaitGroup, 
 		/* When the ticker sends to the channel, it's time to refresh the     */
 		/*token                                                               */
 		case <-ticker.C:
-			slog.Info("Attempting to refresh access token")
+			slog.Debug("Attempting to refresh access token")
 			err = tm.getRefresh(&d, RefreshUrl)
-			slog.Info("Refreshing token failed")
+			slog.Error("Refreshing token failed")
 			if err != nil {
 				/*right now on error, the code quits, that's OK docker can    */
 				/* restart it, but I might come back and improve later.       */
