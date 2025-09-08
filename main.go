@@ -8,6 +8,7 @@ import (
 	"strings"
 	"sync"
 	"syscall"
+	"time"
 )
 
 func main() {
@@ -62,6 +63,7 @@ func main() {
 		ReqDidResp:     make(chan bool),
 		Session:        make(chan DIDResponse),
 		JetStreamError: make(chan bool),
+		Exit:           make(chan int),
 	}
 
 	/* Each go routine in increment the wait group */
@@ -69,7 +71,8 @@ func main() {
 
 	/* Start the Session Server server */
 	wg.Add(1)
-	go sessionServer(ctx, &wg, cnf, cp)
+	tm := &TokenManager{}
+	go sessionServer(tm, ctx, &wg, cnf, cp, time.Second*60)
 
 	/* Start the bot */
 	wg.Add(1)
@@ -79,17 +82,26 @@ func main() {
 		os.Exit(ExitBotFailure)
 	}
 
+	var i int = 0
+
 	go func() {
-		<-cp.JetStreamError //block until signal
-		slog.Error("Jetstream Error, cannot continue")
-		slog.Warn("Shutdown started")
-		cancel()
+		select {
+		case <-cp.JetStreamError: //block until signal
+			slog.Error("Jetstream Error, cannot continue")
+			slog.Warn("Shutdown started")
+			cancel()
+			return
+		case i = <-cp.Exit:
+			slog.Error("Exit requested, shutting down")
+			cancel()
+			slog.Info("Shutdown complete")
+		}
 
 	}()
 
 	wg.Wait()
 	slog.Info("Shutdown complete")
-
+	os.Exit(i)
 }
 
 func loggerConfig(cl *ClArgs) error {
