@@ -7,12 +7,11 @@ import (
 	"fmt"
 	"log/slog"
 	"net/http"
-	"os"
 	"sync"
 	"time"
 )
 
-func sessionServer(ctx context.Context, wg *sync.WaitGroup, cnf *Config, cp ChanPkg) {
+func sessionServer(tm TokenManagerInt, ctx context.Context, wg *sync.WaitGroup, cnf *Config, cp ChanPkg, tr time.Duration) {
 	defer wg.Done()
 
 	slog.Info("Starting")
@@ -20,15 +19,17 @@ func sessionServer(ctx context.Context, wg *sync.WaitGroup, cnf *Config, cp Chan
 	createUrl := fmt.Sprintf("%s/%s", ApiUrl, CreateSessionEndpoint)
 	RefreshUrl := fmt.Sprintf("%s/%s", ApiUrl, RefreshEndpoint)
 
-	d, err := getToken(cnf, createUrl)
+	d, err := tm.getToken(cnf, createUrl)
 	if err != nil {
 		slog.Error("Failed to start session", "err", err.Error())
 		/*Don't clean up, just exit*/
-		os.Exit(ExitGetToken)
+		cp.Exit <- ExitGetToken
+		return
 	}
+	slog.Info("Got Token")
 
 	/*Configure refresh ticker*/
-	ticker := time.NewTicker(time.Second * 60)
+	ticker := time.NewTicker(tr)
 
 	for {
 		slog.Debug("In the loop", "AccessTokenHash", StrHash(d.AccessJwt))
@@ -37,22 +38,20 @@ func sessionServer(ctx context.Context, wg *sync.WaitGroup, cnf *Config, cp Chan
 			slog.Debug("Request for session", "AccessTokenHash", StrHash(d.AccessJwt))
 			// dereference to send copy of DID Response
 			cp.Session <- *d
+
+		/* When the ticker sends to the channel, it's time to refresh the     */
+		/*token                                                               */
 		case <-ticker.C:
 			slog.Debug("Attempting to refresh access token")
-			for i := 0; i < TokenRefreshAttempts; i++ {
-				err = getRefresh(&d, RefreshUrl)
-				if err != nil {
-					slog.Warn("Failed to refresh token", "Attempt", i+1)
-				} else {
-					// if err != nil, we can break out of the retry loop
-					break
-				}
-				time.Sleep(time.Second * TokenRefreshTimeout)
-			}
+			err = tm.getRefresh(&d, RefreshUrl)
 			if err != nil {
-				slog.Error("Could not refresh token", "error", err.Error())
-				os.Exit(ExitGetToken)
+				slog.Error("Refreshing token failed")
+				/*right now on error, the code quits, that's OK docker can    */
+				/* restart it, but I might come back and improve later.       */
+				cp.Exit <- ExitRefreshToken
+				return
 			}
+
 		case <-ctx.Done():
 			/* No need to decrement the wait groups, it's already deferred    */
 			slog.Info("Shutting down")

@@ -10,6 +10,7 @@ const (
 	ExitPostOfficeFailure
 	ExitBotFailure
 	ExitGetToken
+	ExitRefreshToken
 	ExitWebSocketFailure
 )
 
@@ -23,7 +24,9 @@ const DidLookUpEndpoint string = "https://plc.directory"
 const WebsocketTimeout int = 5
 const ByteWorker int = 4
 const TokenRefreshAttempts = 5
-const TokenRefreshTimeout = 5
+
+var TokenRefreshTimeoutMs = 5000
+
 const ByteSliceBufferSize = 10
 
 /*Build info*/
@@ -141,6 +144,7 @@ type ChanPkg struct {
 	ReqDidResp     chan bool
 	Session        chan DIDResponse
 	JetStreamError chan bool
+	Exit           chan int
 }
 
 type tokenCreate struct {

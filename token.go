@@ -9,7 +9,14 @@ import (
 	"net/http"
 )
 
-func getToken(cnf *Config, url string) (*DIDResponse, error) {
+type TokenManagerInt interface {
+	getToken(cnf *Config, url string) (*DIDResponse, error)
+	getRefresh(current **DIDResponse, url string) error
+}
+
+type TokenManager struct{}
+
+func (tm *TokenManager) getToken(cnf *Config, url string) (*DIDResponse, error) {
 	tc := tokenCreate{cnf.Identifier, cnf.GetSecret()}
 
 	requestBody, err := json.Marshal(tc)
@@ -51,7 +58,7 @@ func getToken(cnf *Config, url string) (*DIDResponse, error) {
 	return &tokenResponse, nil
 }
 
-func getRefresh(current **DIDResponse, url string) error {
+func (tm *TokenManager) getRefresh(current **DIDResponse, url string) error {
 	req, err := http.NewRequest("POST", url, nil)
 	if err != nil {
 		slog.Error("Error creating request", "error", err)
